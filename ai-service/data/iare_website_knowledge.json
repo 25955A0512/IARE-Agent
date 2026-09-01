@@ -1,0 +1,332 @@
+{
+  "institution": {
+    "name": "Institute of Aeronautical Engineering (IARE)",
+    "official_website": "https://www.iare.ac.in",
+    "portal_samvidha": "https://samvidha.iare.ac.in",
+    "eamcet_code": "IARE",
+    "established": 2000,
+    "founder_society": "Maruthi Educational Society",
+    "motto": "Education for Liberation",
+    "status": "Autonomous Institution (Approved by AICTE, Affiliated to JNTUH, Hyderabad)",
+    "accreditation": {
+      "naac": "Grade A++ (Highest Accreditation with CGPA 3.55/4.0)",
+      "nba": "Accredited for all primary UG Engineering programs (CSE, IT, ECE, EEE, MECH, AERO, CIVIL)",
+      "nirf": "Ranked in top engineering institutions by NIRF, Ministry of Education, Govt. of India",
+      "autonomy": "Conferred Autonomous status by University Grants Commission (UGC) and JNTUH"
+    },
+    "location": {
+      "address": "Dundigal, Gandimaisamma Mandal, Medchal-Malkajgiri District, Hyderabad, Telangana 500043, India",
+      "coordinates": {"latitude": "17.600544", "longitude": "78.417561"},
+      "landmarks": "Near Outer Ring Road (ORR Exit 5), Dundigal Air Force Academy Road",
+      "contact_phone": "+91-9440505190 / +91-8886234501",
+      "contact_email": "principal@iare.ac.in / info@iare.ac.in"
+    }
+  },
+  "leadership": [
+    {
+      "name": "Dr. L. V. Narasimha Prasad",
+      "designation": "Principal & Professor",
+      "department": "Administration & ECE",
+      "qualification": "Ph.D, M.Tech, B.Tech, MISTE, FIETE",
+      "email": "principal@iare.ac.in",
+      "profile_url": "https://www.iare.ac.in/?q=pages/principal",
+      "bio": "Dr. L. V. Narasimha Prasad has over 25+ years of distinguished academic, research, and administrative leadership. Under his guidance, IARE achieved NAAC A++ accreditation, UGC Autonomy, and top NIRF rankings."
+    },
+    {
+      "name": "Dr. C. Raghavendra",
+      "designation": "Dean of Academics & Professor",
+      "department": "Computer Science and Engineering",
+      "qualification": "Ph.D in CSE",
+      "email": "dean-academics@iare.ac.in",
+      "profile_url": "https://www.iare.ac.in/?q=pages/deans",
+      "bio": "Oversees curriculum development, academic regulations (R23/R22), semester scheduling, and academic auditing."
+    },
+    {
+      "name": "Dr. Gandham Ohm",
+      "designation": "Dean of Student Affairs & Professor",
+      "department": "Student Affairs & Engineering",
+      "qualification": "Ph.D, M.Tech",
+      "email": "dean-studentaffairs@iare.ac.in",
+      "profile_url": "https://www.iare.ac.in/?q=pages/student-affairs",
+      "bio": "Coordinates student welfare, extracurricular activities, club operations, orientation programs, and discipline."
+    },
+    {
+      "name": "Dr. P. Sridhar",
+      "designation": "Dean of Research & Development (R&D)",
+      "department": "Electrical & Electronics Engineering",
+      "qualification": "Ph.D, M.Tech",
+      "email": "dean-rnd@iare.ac.in",
+      "profile_url": "https://www.iare.ac.in/?q=pages/research-development",
+      "bio": "Heads research centers of excellence, sponsored research projects, patents, and faculty publications."
+    },
+    {
+      "name": "Dr. Y. Mohana Roopa",
+      "designation": "Dean of Quality Assurance (IQAC)",
+      "department": "Computer Science and Engineering",
+      "qualification": "Ph.D",
+      "email": "iqac@iare.ac.in",
+      "profile_url": "https://www.iare.ac.in/?q=pages/iqac",
+      "bio": "Leads internal quality assurance, NBA/NAAC compliance, and institutional outcome-based education standards."
+    }
+  ],
+  "departments": [
+    {
+      "code": "CSE",
+      "name": "Department of Computer Science and Engineering",
+      "hod": "Dr. K. Srinivasa Rao",
+      "hod_email": "cse_hod@iare.ac.in",
+      "hod_qualification": "Ph.D (CSE), M.Tech",
+      "programs_offered": [
+        "B.Tech in Computer Science and Engineering (CSE)",
+        "B.Tech CSE (Artificial Intelligence & Machine Learning)",
+        "B.Tech CSE (Data Science)",
+        "B.Tech CSE (Cyber Security)",
+        "M.Tech in Computer Science and Engineering"
+      ],
+      "intake": 480,
+      "page_url": "https://www.iare.ac.in/?q=pages/cse-department",
+      "key_labs": [
+        "NVIDIA Deep Learning & AI Supercomputing Lab",
+        "Apple iOS & Mobile Application Development Lab",
+        "Cloud Computing & Distributed Systems Lab",
+        "Advanced Database Systems & Data Mining Lab",
+        "Java Full Stack & Open Source Lab"
+      ],
+      "key_faculty": [
+        {"name": "Dr. K. Srinivasa Rao", "role": "Professor & Head of Department", "specialization": "Distributed Systems, Cloud & AI", "email": "k.srinivasarao@iare.ac.in"},
+        {"name": "Dr. C. Raghavendra", "role": "Professor (Dean Academics)", "specialization": "Machine Learning, Wireless Networks", "email": "c.raghavendra@iare.ac.in"},
+        {"name": "Dr. Y. Mohana Roopa", "role": "Professor (Dean IQAC)", "specialization": "Data Mining, Big Data Analytics", "email": "y.mohanaroopa@iare.ac.in"},
+        {"name": "Dr. N. Rajasekhar", "role": "Associate Professor", "specialization": "Information Security, Cryptography", "email": "n.rajasekhar@iare.ac.in"},
+        {"name": "Dr. V. Sivakrishna", "role": "Associate Professor", "specialization": "Deep Learning & NLP", "email": "v.sivakrishna@iare.ac.in"}
+      ]
+    },
+    {
+      "code": "IT",
+      "name": "Department of Information Technology",
+      "hod": "Dr. B. Padmaja",
+      "hod_email": "it_hod@iare.ac.in",
+      "hod_qualification": "Ph.D (CSE/IT), M.Tech",
+      "programs_offered": [
+        "B.Tech in Information Technology (IT)",
+        "B.Tech in Computer Science and Information Technology (CSIT)"
+      ],
+      "intake": 180,
+      "page_url": "https://www.iare.ac.in/?q=pages/it-department",
+      "key_labs": [
+        "Full-Stack Web Engineering Lab",
+        "Software Testing & Quality Assurance Lab",
+        "Network Security & Cyber Forensics Lab"
+      ],
+      "key_faculty": [
+        {"name": "Dr. B. Padmaja", "role": "Professor & Head of Department", "specialization": "Machine Learning, Image Processing", "email": "b.padmaja@iare.ac.in"},
+        {"name": "Dr. M. Madhusudhan Reddy", "role": "Associate Professor", "specialization": "Cloud Computing, IoT", "email": "m.madhusudhan@iare.ac.in"}
+      ]
+    },
+    {
+      "code": "ECE",
+      "name": "Department of Electronics and Communication Engineering",
+      "hod": "Dr. G. Ramu",
+      "hod_email": "ece_hod@iare.ac.in",
+      "hod_qualification": "Ph.D, M.Tech, FIETE",
+      "programs_offered": [
+        "B.Tech in Electronics and Communication Engineering (ECE)",
+        "M.Tech in Embedded Systems",
+        "M.Tech in VLSI System Design"
+      ],
+      "intake": 240,
+      "page_url": "https://www.iare.ac.in/?q=pages/ece-department",
+      "key_labs": [
+        "Texas Instruments IoT & Embedded Systems Lab",
+        "Cadence VLSI Design & Simulation Lab",
+        "Digital Signal Processing & Microwave Engineering Lab",
+        "Ansys High Frequency Simulation (HFSS) Lab"
+      ],
+      "key_faculty": [
+        {"name": "Dr. G. Ramu", "role": "Professor & Head of Department", "specialization": "VLSI Design, Embedded Systems", "email": "g.ramu@iare.ac.in"},
+        {"name": "Dr. P. Ashok Babu", "role": "Professor", "specialization": "Wireless Communications, Antenna Design", "email": "p.ashokbabu@iare.ac.in"},
+        {"name": "Dr. V. R. Seshagiri Rao", "role": "Associate Professor", "specialization": "Signal & Image Processing", "email": "v.seshagiri@iare.ac.in"}
+      ]
+    },
+    {
+      "code": "AERO",
+      "name": "Department of Aeronautical Engineering",
+      "hod": "Dr. Y. B. Sudhir Sastry",
+      "hod_email": "aero_hod@iare.ac.in",
+      "hod_qualification": "Ph.D (Aerospace Engineering), M.Tech",
+      "programs_offered": [
+        "B.Tech in Aeronautical Engineering (First in Telangana)",
+        "M.Tech in Aerospace Engineering"
+      ],
+      "intake": 120,
+      "page_url": "https://www.iare.ac.in/?q=pages/aero-department",
+      "key_labs": [
+        "Low-Speed Wind Tunnel Aerodynamics Lab",
+        "Dassault Systèmes 3DEXPERIENCE Aerospace Design Center",
+        "Avionics & Flight Simulation Lab",
+        "Rocket Propulsion & Gas Turbines Lab",
+        "Aircraft Structures & Composites Lab"
+      ],
+      "key_faculty": [
+        {"name": "Dr. Y. B. Sudhir Sastry", "role": "Professor & Head of Department", "specialization": "Aerodynamics, Computational Fluid Dynamics (CFD)", "email": "sudhirsastry@iare.ac.in"},
+        {"name": "Dr. P. Koteswara Rao", "role": "Professor", "specialization": "Flight Mechanics & Space Propulsion", "email": "p.koteswararao@iare.ac.in"}
+      ]
+    },
+    {
+      "code": "EEE",
+      "name": "Department of Electrical and Electronics Engineering",
+      "hod": "Dr. P. Sridhar",
+      "hod_email": "eee_hod@iare.ac.in",
+      "hod_qualification": "Ph.D, M.Tech",
+      "programs_offered": [
+        "B.Tech in Electrical and Electronics Engineering (EEE)",
+        "M.Tech in Power Electronics and Electrical Drives"
+      ],
+      "intake": 60,
+      "page_url": "https://www.iare.ac.in/?q=pages/eee-department",
+      "key_labs": [
+        "Smart Grid & Renewable Energy Systems Lab",
+        "Power Electronics & Electric Vehicle (EV) Powertrain Lab",
+        "Electrical Machines & Control Systems Lab"
+      ]
+    },
+    {
+      "code": "MECH",
+      "name": "Department of Mechanical Engineering",
+      "hod": "Dr. G. V. R. Seshagiri Rao",
+      "hod_email": "mech_hod@iare.ac.in",
+      "hod_qualification": "Ph.D, M.Tech",
+      "programs_offered": [
+        "B.Tech in Mechanical Engineering",
+        "M.Tech in CAD/CAM"
+      ],
+      "intake": 60,
+      "page_url": "https://www.iare.ac.in/?q=pages/mech-department",
+      "key_labs": [
+        "Robotics & Automated Manufacturing Lab",
+        "CNC Machining & Rapid Prototyping (3D Printing) Lab",
+        "Thermal Engineering & Heat Transfer Lab"
+      ]
+    },
+    {
+      "code": "CIVIL",
+      "name": "Department of Civil Engineering",
+      "hod": "Dr. J. S. R. Prasad",
+      "hod_email": "civil_hod@iare.ac.in",
+      "hod_qualification": "Ph.D, M.Tech",
+      "programs_offered": [
+        "B.Tech in Civil Engineering",
+        "M.Tech in Structural Engineering"
+      ],
+      "intake": 60,
+      "page_url": "https://www.iare.ac.in/?q=pages/civil-department",
+      "key_labs": [
+        "Structural Dynamics & Earthquake Engineering Lab",
+        "Geotechnical & Soil Mechanics Lab",
+        "GIS & Total Station Advanced Surveying Lab"
+      ]
+    },
+    {
+      "code": "MBA",
+      "name": "Department of Management Studies (MBA)",
+      "hod": "Dr. M. V. Krishna Rao",
+      "hod_email": "mba_hod@iare.ac.in",
+      "hod_qualification": "Ph.D (Management), MBA",
+      "programs_offered": [
+        "Master of Business Administration (MBA)"
+      ],
+      "intake": 60,
+      "page_url": "https://www.iare.ac.in/?q=pages/mba-department"
+    },
+    {
+      "code": "HS",
+      "name": "Department of Humanities and Sciences (Freshman Engineering)",
+      "hod": "Dr. Rizwana",
+      "hod_email": "hs_hod@iare.ac.in",
+      "hod_qualification": "Ph.D (English / Applied Sciences)",
+      "programs_offered": ["Foundational 1st Year Engineering Curriculum (Physics, Chemistry, Maths, English)"],
+      "page_url": "https://www.iare.ac.in/?q=pages/humanities-sciences"
+    }
+  ],
+  "academic_regulations": {
+    "current_regulations": ["R23 (Autonomous)", "R22 (Autonomous)", "R20", "R18"],
+    "credit_requirements": "Total 160 credits required for B.Tech degree completion",
+    "grading_scale": [
+      {"grade": "O (Outstanding)", "grade_point": 10, "marks_range": ">= 90%"},
+      {"grade": "A+ (Excellent)", "grade_point": 9, "marks_range": "80% - 89%"},
+      {"grade": "A (Very Good)", "grade_point": 8, "marks_range": "70% - 79%"},
+      {"grade": "B+ (Good)", "grade_point": 7, "marks_range": "60% - 69%"},
+      {"grade": "B (Above Average)", "grade_point": 6, "marks_range": "50% - 59%"},
+      {"grade": "C (Pass)", "grade_point": 5, "marks_range": "40% - 49%"},
+      {"grade": "F (Fail)", "grade_point": 0, "marks_range": "< 40%"},
+      {"grade": "Ab (Absent)", "grade_point": 0, "marks_range": "Absent"}
+    ],
+    "attendance_rules": {
+      "minimum_mandatory": "75.0% aggregate attendance across all registered courses in a semester.",
+      "condonation_bracket": "Between 65.0% and 74.99% on genuine medical/valid grounds upon payment of prescribed condonation fee and approval of Principal.",
+      "detention_rule": "Less than 65.0% attendance results in semester detention. The student cannot write End Semester Exams (SEE) and must repeat the semester."
+    },
+    "evaluation_split": {
+      "theory": "40 Marks Continuous Internal Evaluation (CIE) + 60 Marks Semester End Examination (SEE)",
+      "practical_lab": "40 Marks Continuous Lab Evaluation + 60 Marks External Lab Examination",
+      "passing_criteria": "Minimum 35% in SEE and 40% aggregate (CIE + SEE) in each course."
+    }
+  },
+  "placements": {
+    "cell_name": "Career Development and Placement Center (CDPC)",
+    "dean_placement": "Prof. V. V. S. Sasank",
+    "placement_email": "placements@iare.ac.in",
+    "highest_package": "58.5 LPA (International / Tier-1 Tech)",
+    "average_package": "6.8 LPA",
+    "placement_percentage": "92%+ across eligible graduates",
+    "top_recruiters": [
+      "Amazon", "Microsoft", "TCS (Ninja & Digital)", "Infosys", "Cognizant",
+      "Wipro", "Capgemini", "Tech Mahindra", "Virtusa", "L&T Infotech (LTIMindtree)",
+      "Hexaware", "DXC Technology", "Accenture", "ServiceNow", "Quest Global"
+    ],
+    "training_programs": [
+      "Campus to Corporate Soft Skills",
+      "Competitive Coding & Data Structures Bootcamps (LeetCode / CodeChef)",
+      "Full-Stack MERN & Java Spring Boot Training",
+      "Mock Technical and HR Interviews"
+    ]
+  },
+  "campus_facilities": {
+    "library": {
+      "name": "Central Knowledge Hub & Digital Library",
+      "timings": "8:00 AM to 8:00 PM (Monday to Saturday); 9:00 AM to 1:00 PM (Sundays)",
+      "holdings": "55,000+ volumes, 12,000+ titles, 150+ printed journals, 10,000+ e-journals (IEEE Xplore, ScienceDirect, Springer, ASCE, ASME)",
+      "digital_facilities": "High-speed internet access nodes, NPTEL video repository, Delnet, Knimbus remote access platform"
+    },
+    "hostels": {
+      "types": "Separate on-campus and near-campus hostels for Boys and Girls",
+      "amenities": "High-speed WiFi, RO purified drinking water, air-conditioned & non-AC room options, modern gymnasium, indoor recreation hall, 24/7 security & CCTV, solar hot water, attached hygienic dining mess",
+      "hostel_warden_contact": "hostel@iare.ac.in / +91-9440505192"
+    },
+    "transportation": {
+      "fleet": "Fleet of 50+ luxury buses connecting all major sectors of Hyderabad & Secunderabad (Kukatpally, Miyapur, Secunderabad, ECIL, Dilsukhnagar, LB Nagar, Mehdipatnam, Uppal, Patancheru)",
+      "incharge_email": "transport@iare.ac.in"
+    },
+    "sports_recreation": {
+      "outdoor": "Cricket ground with turf pitch, football field, basketball court, volleyball courts, running track",
+      "indoor": "Badminton court, table tennis, chess, carrom, fully equipped fitness gymnasium",
+      "annual_event": "IARE Sports Olympiad & Annual Athletic Meet"
+    },
+    "student_clubs": [
+      {"name": "Coding Club (DevHub)", "focus": "Competitive Programming, Web Dev, Hackathons"},
+      {"name": "Aero Club & Drone Lab", "focus": "UAV Design, RC Aircraft, Quadcopter Flight Dynamics"},
+      {"name": "Robotics & IoT Society", "focus": "Autonomous Bots, Embedded Systems, Line Followers"},
+      {"name": "IEEE Student Branch (IARE STB)", "focus": "Technical Workshops, Paper Presentations, Conferences"},
+      {"name": "Literary & Oratory Club", "focus": "Debates, Model United Nations (MUN), Public Speaking"},
+      {"name": "NSS & Social Responsibility Cell", "focus": "Blood Donation Drives, Village Adoption, Green Campus Initiatives"}
+    ]
+  },
+  "admissions": {
+    "ug_intake_modes": [
+      {"category": "Category A (Convenor Quota - 70%)", "criteria": "Admission based on rank in Telangana State EAMCET (TG-EAPCET) counseling"},
+      {"category": "Category B (Management / NRI Quota - 30%)", "criteria": "Admission based on JEE Main rank / EAMCET rank / 10+2 Intermediate PCM percentage merit"}
+    ],
+    "lateral_entry": "ECET rank holders admitted directly into 2nd year (3rd semester) against 10% supernumerary quota.",
+    "pg_intake_modes": "M.Tech through TS-PGECET / GATE; MBA through TS-ICET counseling.",
+    "admission_office_contact": "+91-9440505190 / admissions@iare.ac.in"
+  }
+}

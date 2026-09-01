@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+aiosqlite
+asyncpg
+python-dotenv
+langgraph
+langchain-groq
+langchain-core
+langchain-google-genai
+networkx
+rapidfuzz
+httpx

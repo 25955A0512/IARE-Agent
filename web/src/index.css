@@ -1,0 +1,307 @@
+/* ============================================================
+   IARE Agent — Apple / macOS Inspired Design System
+   Visual Language:
+   - Frosted-glass vibrancy (backdrop-filter)
+   - Spring physics motion
+   - System native typography stack
+   - Multi-layer soft shadows & generous whitespace
+   - Grouped list patterns & restrained Apple System Blue
+   ============================================================ */
+
+/* ── Design Tokens & Base Variables ────────────────────────── */
+:root {
+  /* System Accent */
+  --accent-color: #0A84FF;
+  --accent-light: #0071E3;
+  --accent-hover: #0077ED;
+  --accent-subtle: rgba(10, 132, 255, 0.12);
+  --accent-border: rgba(10, 132, 255, 0.25);
+  --accent-gradient: linear-gradient(135deg, #0A84FF 0%, #0066CC 100%);
+
+  /* Typography Stack */
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Radii Scale */
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+
+  /* Spring Transitions for Non-Framer-Motion Elements */
+  --spring-fast: 200ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --spring-smooth: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Light Mode (macOS Sequoia / Sonoma Canvas) ── */
+  --bg-page: #F5F5F7;
+  --bg-page-mesh: radial-gradient(at 15% 15%, rgba(10, 132, 255, 0.04) 0px, transparent 50%), radial-gradient(at 85% 85%, rgba(52, 199, 89, 0.03) 0px, transparent 50%), #F5F5F7;
+  --bg-sidebar: rgba(255, 255, 255, 0.72);
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-elevated: #FFFFFF;
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.75);
+  --bg-glass-strong: rgba(255, 255, 255, 0.88);
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --bg-input-focus: #FFFFFF;
+  --bg-segment: rgba(0, 0, 0, 0.06);
+  --bg-segment-pill: #FFFFFF;
+  --bg-badge: rgba(0, 0, 0, 0.05);
+  --bg-sunken: rgba(0, 0, 0, 0.025);
+  
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-card: rgba(0, 0, 0, 0.06);
+  --border-input: rgba(0, 0, 0, 0.12);
+  --border-focus: #0A84FF;
+  --border-glass: rgba(255, 255, 255, 0.65);
+
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-muted: #86868B;
+  --text-dim: #A1A1A6;
+
+  --bubble-user: #0071E3;
+  --bubble-user-bg: #0071E3;
+  --bubble-user-text: #FFFFFF;
+  --bubble-agent: rgba(255, 255, 255, 0.95);
+  --bubble-agent-text: #1D1D1F;
+  --bubble-agent-border: rgba(0, 0, 0, 0.08);
+  --bubble-assistant-bg: rgba(255, 255, 255, 0.95);
+  --bubble-assistant-text: #1D1D1F;
+  --bubble-assistant-border: rgba(0, 0, 0, 0.08);
+
+  --primary-btn: #0071E3;
+  --primary-btn-hover: #0077ED;
+  --primary-btn-text: #FFFFFF;
+
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-card-hover: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 12px 32px -6px rgba(0, 0, 0, 0.09), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 24px 60px -12px rgba(0, 0, 0, 0.18), 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+  --shadow-accent: 0 8px 20px -4px rgba(10, 132, 255, 0.35);
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-blur-heavy: blur(36px) saturate(200%);
+}
+
+/* ── Dark Mode (macOS Obsidian / Deep Graphite Canvas) ─────── */
+[data-theme="dark"] {
+  --bg-page: #0A0D14;
+  --bg-page-mesh: radial-gradient(at 15% 15%, rgba(10, 132, 255, 0.08) 0px, transparent 50%), radial-gradient(at 85% 85%, rgba(48, 209, 88, 0.05) 0px, transparent 50%), #0A0D14;
+  --bg-sidebar: rgba(18, 22, 32, 0.75);
+  --bg-card: rgba(26, 32, 46, 0.65);
+  --bg-card-elevated: rgba(32, 40, 58, 0.85);
+  --bg-card-hover: rgba(36, 45, 66, 0.85);
+  --bg-glass: rgba(20, 26, 38, 0.75);
+  --bg-glass-strong: rgba(26, 32, 46, 0.9);
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --bg-input-focus: rgba(255, 255, 255, 0.1);
+  --bg-segment: rgba(255, 255, 255, 0.08);
+  --bg-segment-pill: rgba(255, 255, 255, 0.18);
+  --bg-badge: rgba(255, 255, 255, 0.08);
+  --bg-sunken: rgba(0, 0, 0, 0.3);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-card: rgba(255, 255, 255, 0.09);
+  --border-input: rgba(255, 255, 255, 0.14);
+  --border-focus: #0A84FF;
+  --border-glass: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #F5F5F7;
+  --text-secondary: #A1A1A6;
+  --text-muted: #86868B;
+  --text-dim: #6E6E73;
+
+  --bubble-user: #0A84FF;
+  --bubble-user-bg: #0A84FF;
+  --bubble-user-text: #FFFFFF;
+  --bubble-agent: rgba(26, 32, 46, 0.88);
+  --bubble-agent-text: #F5F5F7;
+  --bubble-agent-border: rgba(255, 255, 255, 0.08);
+  --bubble-assistant-bg: rgba(26, 32, 46, 0.88);
+  --bubble-assistant-text: #F5F5F7;
+  --bubble-assistant-border: rgba(255, 255, 255, 0.08);
+
+  --primary-btn: #0A84FF;
+  --primary-btn-hover: #0077ED;
+  --primary-btn-text: #FFFFFF;
+
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 12px 32px -6px rgba(0, 0, 0, 0.6), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 8px 24px -4px rgba(10, 132, 255, 0.45);
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+
+  --glass-blur: blur(24px) saturate(190%);
+  --glass-blur-heavy: blur(36px) saturate(210%);
+}
+
+/* ── Reset & Baseline ──────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-page);
+  background-image: var(--bg-page-mesh);
+  color: var(--text-primary);
+  line-height: 1.45;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--spring-smooth), color var(--spring-smooth);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family);
+  line-height: 1.2;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+a:hover { opacity: 0.85; }
+
+button {
+  font-family: var(--font-family);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, select {
+  font-family: var(--font-family);
+}
+
+/* ── Mac-Style Subtle Scrollbars ───────────────────────────── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* ── Frosted Glass Utilities ───────────────────────────────── */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+}
+
+.glass-panel-strong {
+  background: var(--bg-glass-strong);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1px solid var(--border-glass);
+}
+
+/* ── Grouped List Styling (macOS / iOS Settings style) ──────── */
+.settings-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:hover {
+  background: var(--bg-card-hover);
+}
+
+/* ── Keyframe Animations ───────────────────────────────────── */
+@keyframes ambientGlow {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(20px, -20px) scale(1.08);
+  }
+}
+
+@keyframes waveformPulse {
+  0% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+  100% { transform: scaleY(0.25); }
+}
+
+@keyframes applePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(10, 132, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(10, 132, 255, 0);
+  }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes drawPath {
+  to { stroke-dashoffset: 0; }
+}

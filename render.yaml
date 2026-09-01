@@ -1,0 +1,68 @@
+services:
+  # ── AI Service (FastAPI / LangGraph / RAG) ──────────────────────────
+  - type: web
+    name: iare-agent-ai-service
+    runtime: docker
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: "8001"
+      - key: AI_SERVICE_SHARED_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        value: "8873192272:AAFwdMiOs7KiVd60zc0JxQ5d-noTDSDzgM4"
+    healthCheckPath: /internal/health
+
+  # ── Backend Core (Spring Boot / Java 21 / PostgreSQL / JWT) ─────────
+  - type: web
+    name: iare-agent-backend-core
+    runtime: docker
+    dockerfilePath: ./backend-core/Dockerfile
+    dockerContext: ./backend-core
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: SPRING_PROFILES_ACTIVE
+        value: "prod"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_SERVICE_SHARED_SECRET
+        fromService:
+          type: web
+          name: iare-agent-ai-service
+          envVarKey: AI_SERVICE_SHARED_SECRET
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: iare-agent-ai-service
+          property: host
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: iare-agent-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: iare-agent-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: iare-agent-db
+          property: password
+    healthCheckPath: /api/health
+
+databases:
+  # ── PostgreSQL Database ─────────────────────────────────────────────
+  - name: iare-agent-db
+    plan: free
+    region: singapore
+    databaseName: iare_agent
+    user: iare_user

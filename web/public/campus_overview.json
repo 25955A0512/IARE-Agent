@@ -1,0 +1,43 @@
+{
+  "_comment": "IARE Campus Overview — placeholder schema. Replace with real calibrated data.",
+  "_schema": {
+    "nodes": "List of campus locations with relative map coordinates",
+    "x_pct": "Horizontal position as % of map image width (0-100)",
+    "y_pct": "Vertical position as % of map image height (0-100)",
+    "edges": "Walkable connections between nodes"
+  },
+  "nodes": [
+    {"id": 1, "name": "Main Gate",               "aliases": "entrance,front gate,entry",                          "x_pct": 5.0,  "y_pct": 85.0, "description": "Main entrance to IARE campus"},
+    {"id": 2, "name": "Admin Block",             "aliases": "administrative block,administration,admin office,administrative office,principal office", "x_pct": 18.0, "y_pct": 65.0, "description": "Administrative offices — Principal, Registrar, Finance"},
+    {"id": 3, "name": "Student Services",        "aliases": "student services center,student affairs,student helpdesk,examination cell,fee counter",  "x_pct": 28.0, "y_pct": 72.0, "description": "Exam cell, fee counter, ID card, student records"},
+    {"id": 4, "name": "Academic Block A",        "aliases": "block a,a block,building a",                        "x_pct": 40.0, "y_pct": 60.0, "description": "First and second year classrooms and labs"},
+    {"id": 5, "name": "Academic Block B",        "aliases": "block b,b block,building b",                        "x_pct": 55.0, "y_pct": 60.0, "description": "Third year classrooms and labs"},
+    {"id": 6, "name": "Academic Block C",        "aliases": "block c,c block,building c",                        "x_pct": 70.0, "y_pct": 60.0, "description": "Final year classrooms and labs"},
+    {"id": 7, "name": "Library",                 "aliases": "central library,lib,reading room,knowledge centre", "x_pct": 48.0, "y_pct": 40.0, "description": "Central Library with digital resources"},
+    {"id": 8, "name": "Canteen",                 "aliases": "cafeteria,food court,mess,dining hall",             "x_pct": 30.0, "y_pct": 30.0, "description": "Main student canteen"},
+    {"id": 9, "name": "Auditorium",              "aliases": "audi,seminar hall,convention hall",                 "x_pct": 65.0, "y_pct": 30.0, "description": "Main auditorium for convocations and events"},
+    {"id": 10,"name": "Sports Complex",          "aliases": "sports ground,ground,stadium,gym,gymnasium",        "x_pct": 85.0, "y_pct": 42.0, "description": "Outdoor grounds, indoor gym, courts"},
+    {"id": 11,"name": "CSE Department Entrance", "aliases": "cse dept,computer science dept,cs department",      "x_pct": 58.0, "y_pct": 72.0, "description": "CSE department offices"},
+    {"id": 12,"name": "ECE Department Entrance", "aliases": "ece dept,electronics dept,electronics and communication", "x_pct": 74.0, "y_pct": 72.0, "description": "ECE department offices"}
+  ],
+  "edges": [
+    {"source": 1,  "target": 2,  "distance_meters": 180, "step_hint": "Walk straight ahead from the Main Gate toward the Admin Block"},
+    {"source": 1,  "target": 3,  "distance_meters": 220, "step_hint": "Turn right after the Main Gate and follow the paved path to Student Services"},
+    {"source": 2,  "target": 3,  "distance_meters": 80,  "step_hint": "Student Services is directly beside the Admin Block"},
+    {"source": 2,  "target": 4,  "distance_meters": 200, "step_hint": "Continue past Admin Block on the central campus road to Block A"},
+    {"source": 3,  "target": 4,  "distance_meters": 150, "step_hint": "Walk straight past Student Services to reach Block A"},
+    {"source": 4,  "target": 5,  "distance_meters": 120, "step_hint": "Follow the covered walkway from Block A to Block B"},
+    {"source": 5,  "target": 6,  "distance_meters": 120, "step_hint": "Continue along the covered walkway from Block B to Block C"},
+    {"source": 5,  "target": 11, "distance_meters": 80,  "step_hint": "Turn right at the end of Block B to reach the CSE Department entrance"},
+    {"source": 6,  "target": 12, "distance_meters": 80,  "step_hint": "Turn right at the end of Block C to reach the ECE Department entrance"},
+    {"source": 4,  "target": 7,  "distance_meters": 160, "step_hint": "Turn left past Block A and walk up to the Central Library"},
+    {"source": 5,  "target": 7,  "distance_meters": 130, "step_hint": "Walk directly north from Block B to the Library"},
+    {"source": 7,  "target": 8,  "distance_meters": 140, "step_hint": "From the Library, take the path west to the Canteen"},
+    {"source": 7,  "target": 9,  "distance_meters": 160, "step_hint": "From the Library, take the path east past the amphitheatre to the Auditorium"},
+    {"source": 8,  "target": 9,  "distance_meters": 260, "step_hint": "Walk east from the Canteen along the back road to the Auditorium"},
+    {"source": 9,  "target": 10, "distance_meters": 200, "step_hint": "From the Auditorium, continue east to the Sports Complex"},
+    {"source": 6,  "target": 10, "distance_meters": 180, "step_hint": "Turn right from Block C and walk north-east to the Sports Complex"},
+    {"source": 3,  "target": 8,  "distance_meters": 300, "step_hint": "From Student Services walk north following signage to the Canteen"},
+    {"source": 11, "target": 12, "distance_meters": 100, "step_hint": "Walk east along the department row from CSE to ECE"}
+  ]
+}

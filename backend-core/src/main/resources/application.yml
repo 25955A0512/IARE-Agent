@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: iare-agent-backend-core
+  main:
+    allow-circular-references: true
+
+  # DataSource is configured programmatically in DataSourceConfig.java
+  # which probes Supabase connectivity and falls back to H2 if unreachable.
+  # These values are injected into DataSourceConfig via @Value.
+  datasource:
+    url: ${SUPABASE_DB_URL:${DB_URL:jdbc:h2:mem:iare_agent;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}}
+    username: ${SUPABASE_DB_USER:${DB_USERNAME:sa}}
+    password: ${SUPABASE_DB_PASSWORD:${DB_PASSWORD:}}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    # Don't fail if target DB dialect causes minor diff — Flyway owns schema
+    validate-on-migrate: false
+
+  jpa:
+    hibernate:
+      # Use 'update' so Hibernate doesn't crash on H2 when Flyway already ran migrations
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: ${H2_CONSOLE:true}
+      path: /h2-console
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:CHANGE-ME-THIS-IS-INSECURE-DO-NOT-USE-IN-PRODUCTION-32chars}
+    expiry-ms: ${JWT_EXPIRY_MS:900000}          # 15 min
+    refresh-expiry-ms: ${REFRESH_EXPIRY_MS:604800000}  # 7 days
+
+  ai-service:
+    url: ${AI_SERVICE_URL:http://127.0.0.1:8001}
+    shared-secret: ${AI_SERVICE_SHARED_SECRET:CHANGE-ME-INTERNAL-SECRET}
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+logging:
+  level:
+    in.iare.agent: DEBUG
+    org.springframework.security: WARN

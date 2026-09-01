@@ -1,0 +1,66 @@
+# IARE Agent .gitignore
+
+# ── Secrets (NEVER committed) ─────────────────────────────────
+.env
+.env*
+*.env
+.env.local
+.env.production
+ai-service/.env
+backend-core/.env
+scratch/
+.mingit/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv*/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+*.pyc
+.mypy_cache/
+
+# ── Java / Maven ──────────────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+!**/test/**/*.log
+.mvn/wrapper/maven-wrapper.jar
+.m2/
+
+# ── Node / Web ────────────────────────────────────────────────
+node_modules/
+dist/
+.next/
+.nuxt/
+web/dist/
+*.local
+
+# ── IDE ───────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/settings.json
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# ── AI / ML ───────────────────────────────────────────────────
+# faster-whisper downloads models on first use
+*.bin
+*.pt
+*.onnx
+models/

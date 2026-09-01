@@ -1,0 +1,60 @@
+{
+  "description": "Whitelist of Telegram groups consented for IARE Agent event & circular intelligence monitoring. Per AGENTS.md, messages from any group not in this list MUST be ignored immediately. No private/DM messages are ever processed.",
+  "updated_at": "2026-08-26T10:00:00Z",
+  "consented_groups": [
+    {
+      "group_id": -1002345678901,
+      "group_name": "IARE CSE 2026 Official",
+      "department": "CSE",
+      "batch": 2026,
+      "default_semester": 5,
+      "consent_contact": "cse_hod@iare.ac.in",
+      "consented_at": "2026-08-26T10:00:00Z"
+    },
+    {
+      "group_id": -1001234567890,
+      "group_name": "IARE Training & Placement Cell Alerts",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "placements@iare.ac.in",
+      "consented_at": "2026-08-26T10:00:00Z"
+    },
+    {
+      "group_id": -1009876543210,
+      "group_name": "IARE Student Affairs & Club Activities",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "studentaffairs@iare.ac.in",
+      "consented_at": "2026-08-26T10:00:00Z"
+    },
+    {
+      "group_id": -1003456789012,
+      "group_name": "IARE ECE Official Notices",
+      "department": "ECE",
+      "batch": 2026,
+      "default_semester": 5,
+      "consent_contact": "ece_hod@iare.ac.in",
+      "consented_at": "2026-08-26T10:00:00Z"
+    },
+    {
+      "group_id": -1001861027806,
+      "group_name": "IARE Student Community & Circulars",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "admin@iare.ac.in",
+      "consented_at": "2026-08-26T21:35:00Z"
+    },
+    {
+      "group_id": 1861027806,
+      "group_name": "IARE Student Community & Circulars (Direct)",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "admin@iare.ac.in",
+      "consented_at": "2026-08-26T21:35:00Z"
+    }
+  ]
+}
