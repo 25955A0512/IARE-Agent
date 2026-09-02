@@ -25,12 +25,23 @@ export default function LoginPage() {
       await login(email, password)
       navigate('/chat')
     } catch (err: any) {
-      const msg =
+      console.error('Login error:', err)
+      const status = err.response?.status
+      let msg =
         err.response?.data?.error ||
-        err.response?.data?.message ||
-        (err.code === 'ERR_NETWORK' || !err.response
-          ? 'Cannot connect to backend-core (:8080). Please ensure the backend server is running.'
-          : err.message || 'Login failed. Please verify credentials.')
+        err.response?.data?.message
+      
+      if (!msg) {
+        if (status === 405) {
+          msg = 'HTTP 405 Method Not Allowed. Please ensure VITE_API_BASE_URL is set in Vercel to your backend-core URL (https://<backend-core>.onrender.com) and that backend-core is redeployed.'
+        } else if (status === 404) {
+          msg = 'HTTP 404 Not Found. Please verify that VITE_API_BASE_URL points to the backend-core service (port 8080), not the AI service.'
+        } else if (err.code === 'ERR_NETWORK' || !err.response) {
+          msg = 'Cannot connect to backend-core. Please ensure backend-core is awake on Render and VITE_API_BASE_URL is configured.'
+        } else {
+          msg = err.message || 'Login failed. Please verify credentials.'
+        }
+      }
       setError(msg)
     } finally {
       setLoading(false)

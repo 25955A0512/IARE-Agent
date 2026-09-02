@@ -47,7 +47,7 @@ app:
     shared-secret: ${AI_SERVICE_SHARED_SECRET:CHANGE-ME-INTERNAL-SECRET}
 
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000,https://*.vercel.app,https://*.onrender.com,*}
 
 logging:
   level:

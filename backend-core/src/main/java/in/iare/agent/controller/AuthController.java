@@ -25,19 +25,19 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/register")
+    @PostMapping({"/register", "/register/"})
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req) {
         AuthResponse response = authService.register(req);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/login")
+    @PostMapping({"/login", "/login/"})
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
         AuthResponse response = authService.login(req);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/refresh")
+    @PostMapping({"/refresh", "/refresh/"})
     public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> body) {
         String refreshToken = body.get("refreshToken");
         if (refreshToken == null || refreshToken.isBlank()) {

@@ -71,10 +71,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Per AGENTS.md: CORS locked to known frontend origins, no wildcard in production
-        List<String> origins = Arrays.asList(allowedOriginsStr.split(","));
-        config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Support exact origins and wildcard patterns (e.g., https://*.vercel.app)
+        List<String> origins = Arrays.stream(allowedOriginsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOriginPatterns(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
