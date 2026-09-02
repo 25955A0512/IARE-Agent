@@ -228,7 +228,11 @@ export class FallbackVoicePipeline {
       this.callbacks?.onTurnComplete(userText, answer, result)
       await this.speakResponse(answer)
     } catch (err: any) {
-      const fallbackMsg = 'Sorry, I ran into an issue processing that. Could you say that once more?'
+      console.error('[Voice commitTurn error]', err)
+      const detail = err?.response?.data?.message || err?.message || ''
+      const fallbackMsg = detail
+        ? `I encountered an issue: ${detail}. Could you try asking again?`
+        : 'Sorry, I ran into an issue processing that. Could you say that once more?'
       this.callbacks?.onTurnComplete(userText, fallbackMsg)
       await this.speakResponse(fallbackMsg)
     }

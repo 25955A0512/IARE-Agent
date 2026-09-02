@@ -66,6 +66,9 @@ EXPLICIT_TYPO_MAP: Dict[str, str] = {
     "alogrithm": "algorithm",
     "deadlok": "deadlock",
     "dedlock": "deadlock",
+    "iari": "iare",
+    "iaer": "iare",
+    "irae": "iare",
 }
 
 
