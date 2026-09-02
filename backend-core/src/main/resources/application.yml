@@ -16,23 +16,21 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-    # Don't fail if target DB dialect causes minor diff — Flyway owns schema
     validate-on-migrate: false
 
   jpa:
     hibernate:
-      # Use 'update' so Hibernate doesn't crash on H2 when Flyway already ran migrations
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     open-in-view: false
 
   h2:
     console:
-      enabled: ${H2_CONSOLE:true}
-      path: /h2-console
+      enabled: false
 
 server:
   port: ${PORT:8080}
+  address: 0.0.0.0
   error:
     include-message: always
 

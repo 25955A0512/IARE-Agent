@@ -105,8 +105,9 @@ public class DataSourceConfig {
         if (effectivePass != null && !effectivePass.isBlank()) {
             cfg.setPassword(effectivePass);
         }
-        cfg.setConnectionTimeout(15000);
-        cfg.setMaximumPoolSize(10);
+        cfg.setConnectionTimeout(10000);
+        cfg.setInitializationFailTimeout(8000);
+        cfg.setMaximumPoolSize(5);
         cfg.setMinimumIdle(1);
         cfg.setPoolName("IAREPostgres-Pool");
         return new HikariDataSource(cfg);
