@@ -108,6 +108,36 @@ class GeneralAssistantAgent:
         if not self.groq_client and not self.gemini_client:
             log.info("GeneralAssistantAgent: Running with contextual academic knowledge engine (no external API keys set)")
 
+    def _get_groq_client(self):
+        """Dynamically retrieves or initializes the Groq client from environment."""
+        if self.groq_client:
+            return self.groq_client
+        key = os.environ.get("GROQ_API_KEY") or settings.groq_api_key
+        if key and not key.startswith("gsk_YOUR") and key != "your-groq-api-key-here" and len(key.strip()) > 10:
+            try:
+                from groq import Groq
+                self.groq_client = Groq(api_key=key.strip())
+                log.info("Groq client dynamically loaded with model %s", settings.groq_model)
+                return self.groq_client
+            except Exception as e:
+                log.warning("Dynamic Groq client init failed: %s", e)
+        return None
+
+    def _get_gemini_client(self):
+        """Dynamically retrieves or initializes the Google Gemini client from environment."""
+        if self.gemini_client:
+            return self.gemini_client
+        key = os.environ.get("GEMINI_API_KEY") or settings.gemini_api_key
+        if key and not key.startswith("YOUR_") and key != "your-gemini-api-key-here" and len(key.strip()) > 10:
+            try:
+                from google import genai
+                self.gemini_client = genai.Client(api_key=key.strip())
+                log.info("google-genai client dynamically loaded with model %s", settings.gemini_model)
+                return self.gemini_client
+            except Exception as e:
+                log.warning("Dynamic google-genai client init failed: %s", e)
+        return None
+
     def handle(
         self,
         query: str,
@@ -166,21 +196,24 @@ class GeneralAssistantAgent:
 
         # Generate genuine, tailored answer
         answer = None
-        if self.groq_client:
+        groq_client = self._get_groq_client()
+        if groq_client:
             answer = self._generate_with_groq(
                 query, subject, topic, is_weak,
                 student_context, onboarding_context,
                 recent_messages, summary_memory,
-                active_events
+                active_events, client=groq_client
             )
 
-        if not answer and self.gemini_client:
-            answer = self._generate_with_gemini(
-                query, subject, topic, is_weak,
-                student_context, onboarding_context,
-                recent_messages, summary_memory,
-                active_events
-            )
+        if not answer:
+            gemini_client = self._get_gemini_client()
+            if gemini_client:
+                answer = self._generate_with_gemini(
+                    query, subject, topic, is_weak,
+                    student_context, onboarding_context,
+                    recent_messages, summary_memory,
+                    active_events, client=gemini_client
+                )
 
         if not answer:
             answer = self._generate_with_fallback(
@@ -483,9 +516,13 @@ class GeneralAssistantAgent:
         onboarding_context: Optional[Dict[str, Any]],
         recent_messages: Optional[List[Dict[str, str]]],
         summary_memory: Optional[str],
-        active_events: Optional[List[Dict[str, Any]]] = None
+        active_events: Optional[List[Dict[str, Any]]] = None,
+        client: Any = None
     ) -> Optional[str]:
         """Generates a free-form tailored answer via Groq LLM with multi-model fallback."""
+        groq_c = client or self._get_groq_client()
+        if not groq_c:
+            return None
         system_prompt = self._build_system_prompt(
             subject, topic, is_weak,
             student_context, onboarding_context,
@@ -501,7 +538,7 @@ class GeneralAssistantAgent:
         models_to_try = [settings.groq_model, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
         for mdl in dict.fromkeys(models_to_try):
             try:
-                completion = self.groq_client.chat.completions.create(
+                completion = groq_c.chat.completions.create(
                     model=mdl,
                     messages=messages,
                     temperature=0.4,
@@ -524,9 +561,13 @@ class GeneralAssistantAgent:
         onboarding_context: Optional[Dict[str, Any]],
         recent_messages: Optional[List[Dict[str, str]]],
         summary_memory: Optional[str],
-        active_events: Optional[List[Dict[str, Any]]] = None
+        active_events: Optional[List[Dict[str, Any]]] = None,
+        client: Any = None
     ) -> Optional[str]:
         """Generates a free-form tailored answer via Google Gemini with multi-model fallback."""
+        gemini_c = client or self._get_gemini_client()
+        if not gemini_c:
+            return None
         system_prompt = self._build_system_prompt(
             subject, topic, is_weak,
             student_context, onboarding_context,
@@ -536,7 +577,7 @@ class GeneralAssistantAgent:
         models_to_try = [settings.gemini_model, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         for mdl in dict.fromkeys(models_to_try):
             try:
-                response = self.gemini_client.models.generate_content(
+                response = gemini_c.models.generate_content(
                     model=mdl,
                     contents=[
                         {"role": "user", "parts": [{"text": f"{system_prompt}\n\nStudent Query: {query}"}]}
@@ -583,6 +624,25 @@ class GeneralAssistantAgent:
                 f"Feel free to ask if you'd like more details on specific policies, economic reforms, or governance milestones, {first_name}!"
             )
 
+        if "uttar pradesh" in q_lower or "yogi" in q_lower or "adityanath" in q_lower or "up chief minister" in q_lower or "cm of up" in q_lower:
+            return (
+                f"The Chief Minister of Uttar Pradesh is **Shri Yogi Adityanath** (born Ajay Mohan Singh Bisht), who has been serving as the 21st Chief Minister of Uttar Pradesh since March 19, 2017."
+            )
+
+        if "andhra pradesh" in q_lower or "chandrababu" in q_lower or "naidu" in q_lower or "cm of ap" in q_lower or "ap chief minister" in q_lower:
+            return (
+                f"The Chief Minister of Andhra Pradesh is **Shri N. Chandrababu Naidu**, who assumed office as the Chief Minister of Andhra Pradesh in June 2024."
+            )
+
+        if "karnataka" in q_lower or "siddaramaiah" in q_lower or "cm of karnataka" in q_lower:
+            return "The Chief Minister of Karnataka is **Shri Siddaramaiah**."
+
+        if "tamil nadu" in q_lower or "stalin" in q_lower or "cm of tamil nadu" in q_lower or "cm of tn" in q_lower:
+            return "The Chief Minister of Tamil Nadu is **Shri M. K. Stalin**."
+
+        if "maharashtra" in q_lower or "shinde" in q_lower or "cm of maharashtra" in q_lower:
+            return "The Chief Minister of Maharashtra is **Shri Eknath Shinde**."
+
         if "president of india" in q_lower or "droupadi murmu" in q_lower:
             return (
                 f"The President of India is **Smt. Droupadi Murmu**, who assumed office as the 15th President of India in July 2022 (the first tribal woman to hold India's highest constitutional office)."
@@ -596,8 +656,11 @@ class GeneralAssistantAgent:
         if "capital of india" in q_lower:
             return "The capital of India is **New Delhi**."
 
-        if "capital of telangana" in q_lower:
+        if "capital of telangana" in q_lower or "capital of tg" in q_lower:
             return "The capital of Telangana is **Hyderabad**."
+
+        if "capital of andhra" in q_lower or "capital of ap" in q_lower:
+            return "The capital of Andhra Pradesh is **Amaravati**."
 
         # ── 1. Artificial Intelligence & Machine Learning ──────────────────────
         if "artificial intelligence" in q_lower or "ai" in words_in_q or "artificial" in words_in_q:
