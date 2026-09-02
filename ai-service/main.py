@@ -83,11 +83,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# No public CORS — this service only accepts calls from backend-core
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # backend-core only
-    allow_methods=["POST", "GET"],
+    allow_origins=[
+        "https://iare-agent.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:8080",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
