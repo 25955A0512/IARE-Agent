@@ -2,6 +2,7 @@ package in.iare.agent;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
 /**
@@ -9,11 +10,13 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
  * This service is the only internet-facing component.
  * All AI processing is delegated to ai-service via an internal shared-secret channel.
  *
- * DataSourceAutoConfiguration is excluded because DataSourceConfig.java provides
- * a smarter @Primary DataSource bean that probes Supabase connectivity at startup
- * and falls back to H2 in-memory DB when offline — so the app always starts locally.
+ * DataSourceAutoConfiguration and H2ConsoleAutoConfiguration are excluded because
+ * DataSourceConfig.java provides a smart @Primary DataSource bean.
  */
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication(exclude = {
+    DataSourceAutoConfiguration.class,
+    H2ConsoleAutoConfiguration.class
+})
 public class IareAgentApplication {
     public static void main(String[] args) {
         SpringApplication.run(IareAgentApplication.class, args);

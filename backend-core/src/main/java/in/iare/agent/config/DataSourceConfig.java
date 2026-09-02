@@ -12,11 +12,12 @@ import org.springframework.context.annotation.Primary;
 import javax.sql.DataSource;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.URI;
 
 /**
  * DataSourceConfig — Handles database connection with automatic URL normalization.
- * Normalizes postgresql:// and postgres:// to jdbc:postgresql://.
- * Probes host reachability and connects via PostgreSQL driver, with fallback to H2 for offline dev.
+ * Extracts clean host:port/path from generic URIs (user:password@host:port/db) and
+ * supplies credentials separately to HikariCP for standard PostgreSQL JDBC compatibility.
  */
 @Configuration
 public class DataSourceConfig {
@@ -35,52 +36,75 @@ public class DataSourceConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        String url = normalizeJdbcUrl(configuredUrl);
+        String raw = configuredUrl != null ? configuredUrl.trim() : "";
 
-        // PostgreSQL configuration
-        if (url.startsWith("jdbc:postgresql://")) {
-            String host = extractHost(url);
-            int port = extractPort(url);
+        // Check if PostgreSQL
+        if (raw.startsWith("jdbc:postgresql://") || raw.startsWith("postgresql://") || raw.startsWith("postgres://")) {
+            String host = extractHost(raw);
+            int port = extractPort(raw);
             boolean reachable = isReachable(host, port, 4000);
             if (!reachable) {
                 log.warn("DataSourceConfig: PostgreSQL host '{}:{}' is unreachable — falling back to H2 in-memory database for local dev.", host, port);
                 return buildH2DataSource();
             }
             log.info("DataSourceConfig: PostgreSQL host '{}:{}' is reachable — connecting with org.postgresql.Driver.", host, port);
-            return buildPostgresDataSource(url);
+            return buildPostgresDataSource(raw);
         }
 
         // H2 or fallback
-        log.info("DataSourceConfig: Using datasource URL: {}", maskUrl(url));
-        String driver = url.contains("postgresql") ? "org.postgresql.Driver" : "org.h2.Driver";
-        return buildDataSource(url, username, password, driver);
+        log.info("DataSourceConfig: Using datasource URL: {}", maskUrl(raw));
+        String driver = raw.contains("postgresql") ? "org.postgresql.Driver" : "org.h2.Driver";
+        return buildDataSource(raw, username, password, driver);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    private String normalizeJdbcUrl(String rawUrl) {
-        if (rawUrl == null || rawUrl.isBlank()) {
-            return "jdbc:h2:mem:iare_agent;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
-        }
-        String trimmed = rawUrl.trim();
-        if (trimmed.startsWith("postgres://")) {
-            return trimmed.replaceFirst("postgres://", "jdbc:postgresql://");
-        } else if (trimmed.startsWith("postgresql://")) {
-            return trimmed.replaceFirst("postgresql://", "jdbc:postgresql://");
-        }
-        return trimmed;
-    }
-
-    private DataSource buildPostgresDataSource(String jdbcUrl) {
+    private DataSource buildPostgresDataSource(String rawUrl) {
         HikariConfig cfg = new HikariConfig();
-        cfg.setJdbcUrl(jdbcUrl);
-        if (username != null && !username.isBlank() && !"sa".equals(username)) {
-            cfg.setUsername(username);
-        }
-        if (password != null && !password.isBlank()) {
-            cfg.setPassword(password);
-        }
         cfg.setDriverClassName("org.postgresql.Driver");
+
+        String effectiveUser = this.username;
+        String effectivePass = this.password;
+        String cleanJdbcUrl = rawUrl;
+
+        try {
+            // Strip jdbc: prefix if present so java.net.URI can parse cleanly
+            String uriString = rawUrl.startsWith("jdbc:") ? rawUrl.substring(5) : rawUrl;
+            URI uri = new URI(uriString);
+
+            String host = uri.getHost();
+            int port = uri.getPort() == -1 ? 5432 : uri.getPort();
+            String path = uri.getPath(); // includes leading '/' e.g. /iare_agent
+
+            // Standard clean JDBC format without @ credentials: jdbc:postgresql://host:port/database
+            cleanJdbcUrl = "jdbc:postgresql://" + host + ":" + port + (path != null ? path : "");
+            if (uri.getQuery() != null && !uri.getQuery().isBlank()) {
+                cleanJdbcUrl += "?" + uri.getQuery();
+            }
+
+            // Extract credentials from userInfo (user:password) if present
+            if (uri.getUserInfo() != null) {
+                String[] userInfo = uri.getUserInfo().split(":", 2);
+                if (userInfo.length > 0 && !userInfo[0].isBlank()) {
+                    effectiveUser = userInfo[0];
+                }
+                if (userInfo.length > 1 && !userInfo[1].isBlank()) {
+                    effectivePass = userInfo[1];
+                }
+            }
+        } catch (Exception e) {
+            log.warn("DataSourceConfig: URI parsing fallback for {}: {}", maskUrl(rawUrl), e.getMessage());
+            cleanJdbcUrl = rawUrl.startsWith("jdbc:") ? rawUrl : "jdbc:" + rawUrl;
+        }
+
+        log.info("DataSourceConfig: Configured clean PostgreSQL JDBC URL: {}", maskUrl(cleanJdbcUrl));
+        cfg.setJdbcUrl(cleanJdbcUrl);
+        if (effectiveUser != null && !effectiveUser.isBlank() && !"sa".equals(effectiveUser)) {
+            cfg.setUsername(effectiveUser);
+        }
+        if (effectivePass != null && !effectivePass.isBlank()) {
+            cfg.setPassword(effectivePass);
+        }
         cfg.setConnectionTimeout(15000);
         cfg.setMaximumPoolSize(10);
         cfg.setMinimumIdle(1);
@@ -114,9 +138,16 @@ public class DataSourceConfig {
         }
     }
 
-    private String extractHost(String jdbcUrl) {
+    private String extractHost(String rawUrl) {
         try {
-            String clean = jdbcUrl.replace("jdbc:postgresql://", "");
+            String uriString = rawUrl.startsWith("jdbc:") ? rawUrl.substring(5) : rawUrl;
+            URI uri = new URI(uriString);
+            if (uri.getHost() != null) {
+                return uri.getHost();
+            }
+        } catch (Exception ignored) {}
+        try {
+            String clean = rawUrl.replace("jdbc:postgresql://", "").replace("postgresql://", "").replace("postgres://", "");
             String hostPort = clean.split("/")[0];
             if (hostPort.contains("@")) {
                 hostPort = hostPort.substring(hostPort.indexOf("@") + 1);
@@ -127,15 +158,12 @@ public class DataSourceConfig {
         }
     }
 
-    private int extractPort(String jdbcUrl) {
+    private int extractPort(String rawUrl) {
         try {
-            String clean = jdbcUrl.replace("jdbc:postgresql://", "");
-            String hostPort = clean.split("/")[0];
-            if (hostPort.contains("@")) {
-                hostPort = hostPort.substring(hostPort.indexOf("@") + 1);
-            }
-            if (hostPort.contains(":")) {
-                return Integer.parseInt(hostPort.split(":")[1]);
+            String uriString = rawUrl.startsWith("jdbc:") ? rawUrl.substring(5) : rawUrl;
+            URI uri = new URI(uriString);
+            if (uri.getPort() != -1) {
+                return uri.getPort();
             }
         } catch (Exception ignored) {}
         return 5432;
