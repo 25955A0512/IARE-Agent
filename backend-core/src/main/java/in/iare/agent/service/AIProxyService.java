@@ -53,6 +53,27 @@ public class AIProxyService {
     @Value("${app.ai-service.shared-secret}")
     private String sharedSecret;
 
+    public String getNormalizedAiServiceUrl() {
+        if (aiServiceUrl == null || aiServiceUrl.isBlank()) {
+            return "http://127.0.0.1:8001";
+        }
+        String trimmed = aiServiceUrl.trim().replaceAll("/+$", "");
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            if (trimmed.contains("onrender.com")) {
+                trimmed = "https://" + trimmed;
+            } else {
+                trimmed = "http://" + trimmed;
+            }
+        }
+        try {
+            java.net.URI uri = new java.net.URI(trimmed);
+            if (uri.getPort() == -1 && !trimmed.contains("onrender.com")) {
+                trimmed = trimmed + ":8001";
+            }
+        } catch (Exception ignored) {}
+        return trimmed;
+    }
+
     /**
      * Forward a chat/navigation/general query to ai-service and return the response.
      * Integrates persistent conversation memory and student context.
@@ -69,7 +90,8 @@ public class AIProxyService {
         }
 
         try {
-            WebClient client = webClientBuilder.baseUrl(aiServiceUrl).build();
+            String targetUrl = getNormalizedAiServiceUrl();
+            WebClient client = webClientBuilder.baseUrl(targetUrl).build();
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("message", message);
@@ -170,8 +192,9 @@ public class AIProxyService {
 
             return response;
         } catch (Exception e) {
-            log.error("Failed to call ai-service at {}: {}", aiServiceUrl, e.getMessage());
-            throw new RuntimeException("Could not connect to AI microservice at " + aiServiceUrl + " (" + e.getMessage() + ")");
+            String targetUrl = getNormalizedAiServiceUrl();
+            log.error("Failed to call ai-service at {}: {}", targetUrl, e.getMessage());
+            throw new RuntimeException("Could not connect to AI microservice at " + targetUrl + " (" + e.getMessage() + ")");
         }
     }
 
@@ -182,7 +205,7 @@ public class AIProxyService {
     public Map<String, Object> getGeminiLiveToken(User caller) {
         auditLogService.log(caller.getId(), AuditLog.EventType.VOICE_SESSION_REQUESTED, null);
 
-        WebClient client = webClientBuilder.baseUrl(aiServiceUrl).build();
+        WebClient client = webClientBuilder.baseUrl(getNormalizedAiServiceUrl()).build();
 
         @SuppressWarnings("unchecked")
         Map<String, Object> response = client.post()
@@ -205,7 +228,7 @@ public class AIProxyService {
      */
     public Map<String, Object> scrapeSamvidhaTimetable(String rollNo, String password) {
         log.info("Requesting in-memory Samvidha timetable scrape via ai-service for roll: {}", rollNo);
-        WebClient client = webClientBuilder.baseUrl(aiServiceUrl).build();
+        WebClient client = webClientBuilder.baseUrl(getNormalizedAiServiceUrl()).build();
 
         Map<String, String> payload = new HashMap<>();
         payload.put("roll_no", rollNo);

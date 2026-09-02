@@ -299,9 +299,30 @@ public class SamvidhaService {
                 .build();
     }
 
+    private String getNormalizedAiServiceUrl() {
+        if (aiServiceUrl == null || aiServiceUrl.isBlank()) {
+            return "http://127.0.0.1:8001";
+        }
+        String trimmed = aiServiceUrl.trim().replaceAll("/+$", "");
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            if (trimmed.contains("onrender.com")) {
+                trimmed = "https://" + trimmed;
+            } else {
+                trimmed = "http://" + trimmed;
+            }
+        }
+        try {
+            java.net.URI uri = new java.net.URI(trimmed);
+            if (uri.getPort() == -1 && !trimmed.contains("onrender.com")) {
+                trimmed = trimmed + ":8001";
+            }
+        } catch (Exception ignored) {}
+        return trimmed;
+    }
+
     private Map<String, Object> callAiServiceScraper(String rollNo, String password) {
         try {
-            WebClient client = webClientBuilder.baseUrl(aiServiceUrl).build();
+            WebClient client = webClientBuilder.baseUrl(getNormalizedAiServiceUrl()).build();
             Map<String, String> payload = Map.of("roll_no", rollNo, "password", password);
 
             @SuppressWarnings("unchecked")

@@ -238,8 +238,8 @@ export async function getVoiceSessionToken(): Promise<VoiceSessionToken> {
 
 export async function checkHealth(): Promise<boolean> {
   try {
-    const res = await axios.get('/api/health', { timeout: 2500 })
-    return res.status === 200 && res.data?.status === 'UP'
+    const res = await api.get('/health', { timeout: 4000 })
+    return res.status === 200 && (res.data?.status === 'UP' || res.data?.status === 'ok')
   } catch {
     return false
   }
