@@ -112,8 +112,13 @@ class GeneralAssistantAgent:
         """Dynamically retrieves or initializes the Groq client from environment."""
         if self.groq_client:
             return self.groq_client
-        key = os.environ.get("GROQ_API_KEY") or settings.groq_api_key
-        if key and not key.startswith("gsk_YOUR") and key != "your-groq-api-key-here" and len(key.strip()) > 10:
+        key = (
+            os.environ.get("GROQ_API_KEY")
+            or os.environ.get("GROQ_APT_KEY")
+            or os.environ.get("GROQ_KEY")
+            or settings.groq_api_key
+        )
+        if key and not key.startswith("gsk_YOUR") and key != "your-groq-api-key-here" and len(key.strip()) > 8:
             try:
                 from groq import Groq
                 self.groq_client = Groq(api_key=key.strip())
@@ -127,8 +132,13 @@ class GeneralAssistantAgent:
         """Dynamically retrieves or initializes the Google Gemini client from environment."""
         if self.gemini_client:
             return self.gemini_client
-        key = os.environ.get("GEMINI_API_KEY") or settings.gemini_api_key
-        if key and not key.startswith("YOUR_") and key != "your-gemini-api-key-here" and len(key.strip()) > 10:
+        key = (
+            os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_KEY")
+            or settings.gemini_api_key
+        )
+        if key and not key.startswith("YOUR_") and key != "your-gemini-api-key-here" and len(key.strip()) > 8:
             try:
                 from google import genai
                 self.gemini_client = genai.Client(api_key=key.strip())
@@ -519,10 +529,8 @@ class GeneralAssistantAgent:
         active_events: Optional[List[Dict[str, Any]]] = None,
         client: Any = None
     ) -> Optional[str]:
-        """Generates a real-time generative answer via Groq LLM API."""
+        """Generates a real-time generative answer via Groq LLM API with SDK & REST support."""
         groq_c = client or self._get_groq_client()
-        if not groq_c:
-            return None
         system_prompt = self._build_system_prompt(
             subject, topic, is_weak,
             student_context, onboarding_context,
@@ -535,20 +543,58 @@ class GeneralAssistantAgent:
                 messages.append({"role": m.get("role", "user"), "content": m.get("content", "")})
         messages.append({"role": "user", "content": query})
 
-        models_to_try = [settings.groq_model, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
-        for mdl in dict.fromkeys(models_to_try):
-            try:
-                completion = groq_c.chat.completions.create(
-                    model=mdl,
-                    messages=messages,
-                    temperature=0.4,
-                    max_tokens=1200,
-                )
-                ans = completion.choices[0].message.content.strip()
-                if ans:
-                    return ans
-            except Exception as e:
-                log.warning("Groq model %s error: %s", mdl, e)
+        # 1. Try groq SDK
+        if groq_c:
+            models_to_try = [settings.groq_model, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
+            for mdl in dict.fromkeys(models_to_try):
+                try:
+                    completion = groq_c.chat.completions.create(
+                        model=mdl,
+                        messages=messages,
+                        temperature=0.4,
+                        max_tokens=1500,
+                    )
+                    ans = completion.choices[0].message.content.strip()
+                    if ans:
+                        return ans
+                except Exception as e:
+                    log.warning("Groq SDK model %s error: %s", mdl, e)
+
+        # 2. Universal Direct HTTP REST call for Groq
+        raw_key = (
+            os.environ.get("GROQ_API_KEY")
+            or os.environ.get("GROQ_APT_KEY")
+            or os.environ.get("GROQ_KEY")
+            or settings.groq_api_key
+        )
+        if raw_key and not raw_key.startswith("gsk_YOUR") and raw_key != "your-groq-api-key-here" and len(raw_key.strip()) > 8:
+            import urllib.request
+            import json as py_json
+            for mdl in ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]:
+                try:
+                    url = "https://api.groq.com/openai/v1/chat/completions"
+                    payload = {
+                        "model": mdl,
+                        "messages": messages,
+                        "temperature": 0.4,
+                        "max_tokens": 1500
+                    }
+                    req = urllib.request.Request(
+                        url,
+                        data=py_json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {raw_key.strip()}"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as res:
+                        data = py_json.loads(res.read().decode("utf-8"))
+                        text = data["choices"][0]["message"]["content"]
+                        if text:
+                            return text.strip()
+                except Exception as e:
+                    log.warning("Direct Groq REST call to %s failed: %s", mdl, e)
+
         return None
 
     def _generate_with_gemini(
@@ -564,7 +610,7 @@ class GeneralAssistantAgent:
         active_events: Optional[List[Dict[str, Any]]] = None,
         client: Any = None
     ) -> Optional[str]:
-        """Generates a real-time generative answer via Google Gemini API."""
+        """Generates a real-time generative answer via Google Gemini API with SDK & REST support."""
         gemini_c = client or self._get_gemini_client()
         system_prompt = self._build_system_prompt(
             subject, topic, is_weak,
@@ -572,6 +618,7 @@ class GeneralAssistantAgent:
             recent_messages, summary_memory,
             active_events
         )
+        full_user_prompt = f"System Instructions & Student Context:\n{system_prompt}\n\nStudent Query:\n{query}"
 
         # 1. Try google-genai SDK
         if gemini_c:
@@ -580,34 +627,36 @@ class GeneralAssistantAgent:
                 try:
                     response = gemini_c.models.generate_content(
                         model=mdl,
-                        contents=[
-                            {"role": "user", "parts": [{"text": f"{system_prompt}\n\nUser Question:\n{query}"}]}
-                        ]
+                        contents=full_user_prompt
                     )
                     if response and response.text:
                         return response.text.strip()
                 except Exception as e:
                     log.warning("Gemini SDK model %s error: %s", mdl, e)
 
-        # 2. Direct HTTP REST fallback if SDK client has connectivity/version nuance
-        raw_key = os.environ.get("GEMINI_API_KEY") or settings.gemini_api_key
-        if raw_key and not raw_key.startswith("YOUR_") and raw_key != "your-gemini-api-key-here" and len(raw_key.strip()) > 10:
+        # 2. Universal Direct HTTP REST fallback for Gemini
+        raw_key = (
+            os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_KEY")
+            or settings.gemini_api_key
+        )
+        if raw_key and not raw_key.startswith("YOUR_") and raw_key != "your-gemini-api-key-here" and len(raw_key.strip()) > 8:
             import urllib.request
             import json as py_json
-            for mdl in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+            for mdl in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent?key={raw_key.strip()}"
                     payload = {
-                        "system_instruction": {"parts": [{"text": system_prompt}]},
-                        "contents": [{"parts": [{"text": query}]}],
-                        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 1200}
+                        "contents": [{"parts": [{"text": full_user_prompt}]}],
+                        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 1500}
                     }
                     req = urllib.request.Request(
                         url,
                         data=py_json.dumps(payload).encode("utf-8"),
                         headers={"Content-Type": "application/json"}
                     )
-                    with urllib.request.urlopen(req, timeout=12) as res:
+                    with urllib.request.urlopen(req, timeout=15) as res:
                         data = py_json.loads(res.read().decode("utf-8"))
                         text = data["candidates"][0]["content"]["parts"][0]["text"]
                         if text:

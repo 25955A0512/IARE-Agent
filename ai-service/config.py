@@ -22,11 +22,19 @@ class Settings:
     )
 
     # ── LLM Inference (Groq Primary, Gemini Fallback per AGENTS.md) ───────────
-    groq_api_key: str | None = os.environ.get("GROQ_API_KEY")
+    groq_api_key: str | None = (
+        os.environ.get("GROQ_API_KEY")
+        or os.environ.get("GROQ_APT_KEY")
+        or os.environ.get("GROQ_KEY")
+    )
     groq_model: str = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # Uses google-genai SDK (NOT deprecated google-generativeai per AGENTS.md)
-    gemini_api_key: str | None = os.environ.get("GEMINI_API_KEY")
+    gemini_api_key: str | None = (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GEMINI_KEY")
+    )
     gemini_model: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
     # ── Data ─────────────────────────────────────────────────────────────────
