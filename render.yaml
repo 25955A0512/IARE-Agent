@@ -17,7 +17,7 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: TELEGRAM_BOT_TOKEN
-        value: "8873192272:AAFwdMiOs7KiVd60zc0JxQ5d-noTDSDzgM4"
+        sync: false
     healthCheckPath: /internal/health
 
   # ── Backend Core (Spring Boot / Java 21 / PostgreSQL / JWT) ─────────

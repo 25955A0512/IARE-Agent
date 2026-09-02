@@ -109,9 +109,15 @@ def require_internal_secret(request: Request):
 # ── Health ────────────────────────────────────────────────────────────────────
 
 @app.get("/internal/health")
-async def health(_=Depends(require_internal_secret)):
+@app.get("/health")
+async def health():
+    """
+    Lightweight health check endpoint for cloud orchestrators (e.g., Render, Kubernetes)
+    and internal monitoring. Publicly accessible without secrets to allow automated readiness checks.
+    """
     return {
         "status": "ok",
+        "service": "iare-agent-ai-service",
         "nav_nodes": len(_nav_agent.nodes) if _nav_agent else 0,
         "nav_edges": _nav_agent.graph.number_of_edges() if _nav_agent else 0,
         "general_assistant_active": _general_agent is not None,

@@ -192,6 +192,14 @@ class TelegramListener:
         base_url = f"https://api.telegram.org/bot{token}"
 
         async with httpx.AsyncClient(timeout=35.0) as client:
+            # Delete any existing webhook to ensure getUpdates polling succeeds without 409 Conflict
+            try:
+                del_resp = await client.post(f"{base_url}/deleteWebhook", params={"drop_pending_updates": False})
+                if del_resp.status_code == 200:
+                    log.info("TelegramListener: Cleared any webhook, ready for polling")
+            except Exception as e:
+                log.debug("TelegramListener: deleteWebhook check: %s", e)
+
             while self._is_running:
                 try:
                     resp = await client.get(
@@ -234,6 +242,12 @@ class TelegramListener:
                                 chat_type=chat_type,
                                 image_bytes=photo_bytes,
                             )
+                    elif resp.status_code == 409:
+                        log.warning("Telegram getUpdates returned 409 Conflict (another instance or webhook active). Backing off 10s...")
+                        await asyncio.sleep(10)
+                    else:
+                        log.warning("Telegram getUpdates returned HTTP %d: %s. Backing off 5s...", resp.status_code, resp.text)
+                        await asyncio.sleep(5)
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
