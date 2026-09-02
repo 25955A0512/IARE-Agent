@@ -304,25 +304,53 @@ public class SamvidhaService {
             return "http://127.0.0.1:8001";
         }
         String trimmed = aiServiceUrl.trim().replaceAll("/+$", "");
-        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            if (trimmed.contains("onrender.com")) {
-                trimmed = "https://" + trimmed;
-            } else {
+
+        // Local development
+        if (trimmed.contains("localhost") || trimmed.contains("127.0.0.1")) {
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
                 trimmed = "http://" + trimmed;
             }
-        }
-        try {
-            java.net.URI uri = new java.net.URI(trimmed);
-            if (uri.getPort() == -1 && !trimmed.contains("onrender.com")) {
+            if (trimmed.indexOf(":", trimmed.indexOf("//") + 2) == -1) {
                 trimmed = trimmed + ":8001";
             }
-        } catch (Exception ignored) {}
-        return trimmed;
+            return trimmed;
+        }
+
+        // If it already is a full HTTPS URL
+        if (trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+
+        // If it starts with http:// but refers to Render service name
+        if (trimmed.startsWith("http://")) {
+            if (trimmed.contains("iare-agent-ai-service") && !trimmed.contains("onrender.com")) {
+                return "https://iare-agent-ai-service.onrender.com";
+            }
+            return trimmed;
+        }
+
+        // Render free tier hostname -> https://<name>.onrender.com
+        if (!trimmed.contains(".")) {
+            return "https://" + trimmed + ".onrender.com";
+        }
+
+        return "https://" + trimmed;
+    }
+
+    private WebClient createWebClient(String baseUrl) {
+        reactor.netty.http.client.HttpClient httpClient = reactor.netty.http.client.HttpClient.create()
+                .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
+                .responseTimeout(java.time.Duration.ofSeconds(45));
+
+        return webClientBuilder
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
+                .baseUrl(baseUrl)
+                .build();
     }
 
     private Map<String, Object> callAiServiceScraper(String rollNo, String password) {
         try {
-            WebClient client = webClientBuilder.baseUrl(getNormalizedAiServiceUrl()).build();
+            WebClient client = createWebClient(getNormalizedAiServiceUrl());
             Map<String, String> payload = Map.of("roll_no", rollNo, "password", password);
 
             @SuppressWarnings("unchecked")
@@ -333,7 +361,7 @@ public class SamvidhaService {
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .block();
+                    .block(java.time.Duration.ofSeconds(45));
 
             return response != null ? response : Map.of("success", false, "error", "Empty response from ai-service");
         } catch (Exception e) {
