@@ -27,7 +27,7 @@ class Settings:
 
     # Uses google-genai SDK (NOT deprecated google-generativeai per AGENTS.md)
     gemini_api_key: str | None = os.environ.get("GEMINI_API_KEY")
-    gemini_model: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-exp")
+    gemini_model: str = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
     # ── Data ─────────────────────────────────────────────────────────────────
     campus_data_path: str = os.environ.get(

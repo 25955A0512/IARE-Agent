@@ -50,6 +50,8 @@ import {
   Image as ImageIcon,
   Copy,
   Check,
+  Settings,
+  User as UserIcon,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -443,8 +445,9 @@ export default function ChatPage() {
         <nav style={styles.navGroup}>
           {[
             { id: 'chat', label: 'Active Chat', icon: <MessageSquare size={15} /> },
-            { id: 'history', label: 'Chat History', icon: <Clock size={15} />, action: () => setIsHistoryOpen(true) },
+            { id: 'assessments', label: 'Assessments & Tests', icon: <Award size={15} />, action: () => setIsAssessmentOpen(true) },
             { id: 'academic', label: 'Academic Hub', icon: <GraduationCap size={15} />, action: () => setIsStudentHubOpen(true) },
+            { id: 'history', label: 'Chat History', icon: <Clock size={15} />, action: () => setIsHistoryOpen(true) },
             {
               id: 'events',
               label: 'Notices & Feed',
@@ -522,7 +525,14 @@ export default function ChatPage() {
         </div>
 
         {/* User Profile Card & Sign Out */}
-        <div style={styles.profileCard}>
+        <div
+          style={{
+            ...styles.profileCard,
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsStudentHubOpen(true)}
+          title="Click to view Student Profile & Academic Hub"
+        >
           <div style={styles.profileAvatar}>
             {user.photoUrl ? (
               <img
@@ -538,13 +548,28 @@ export default function ChatPage() {
             <div style={styles.profileName}>{user.name || 'IARE Student'}</div>
             <div style={styles.profileEmail}>{user.rollNo || user.email}</div>
           </div>
-          <button
-            onClick={handleLogout}
-            style={styles.logoutBtn}
-            title="Sign Out"
-          >
-            <LogOut size={15} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsOnboardingOpen(true)
+              }}
+              style={styles.logoutBtn}
+              title="Profile Settings & Preferences"
+            >
+              <Settings size={15} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleLogout()
+              }}
+              style={styles.logoutBtn}
+              title="Sign Out"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -910,8 +935,8 @@ function ChatBubble({ message, onFollowUp }: { message: Message; onFollowUp: (q:
           }}
         />
 
-        {/* Weakness Detection Practice Suggestion Chips */}
-        {!isUser && (isWeak || topic) && (
+        {/* Weakness Detection Practice Suggestion Chips (Only shown when studying a flagged weak subject) */}
+        {!isUser && Boolean(isWeak && topic && topic !== 'Casual Interaction' && topic !== 'General Conversation' && topic !== 'Academic Inquiry' && topic !== 'More Matter Sree' && topic !== 'General') && (
           <div style={styles.weaknessChipsContainer}>
             <div style={styles.weaknessLabel}>
               <Sparkles size={13} style={{ color: 'var(--accent-color)' }} />

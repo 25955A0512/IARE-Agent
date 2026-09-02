@@ -485,33 +485,34 @@ class GeneralAssistantAgent:
         summary_memory: Optional[str],
         active_events: Optional[List[Dict[str, Any]]] = None
     ) -> Optional[str]:
-        """Generates a free-form tailored answer via Groq LLM."""
-        try:
-            system_prompt = self._build_system_prompt(
-                subject, topic, is_weak,
-                student_context, onboarding_context,
-                recent_messages, summary_memory,
-                active_events
-            )
-            messages = [{"role": "system", "content": system_prompt}]
-            if recent_messages:
-                for m in recent_messages[-4:]:
-                    messages.append({"role": m.get("role", "user"), "content": m.get("content", "")})
-            messages.append({"role": "user", "content": query})
+        """Generates a free-form tailored answer via Groq LLM with multi-model fallback."""
+        system_prompt = self._build_system_prompt(
+            subject, topic, is_weak,
+            student_context, onboarding_context,
+            recent_messages, summary_memory,
+            active_events
+        )
+        messages = [{"role": "system", "content": system_prompt}]
+        if recent_messages:
+            for m in recent_messages[-4:]:
+                messages.append({"role": m.get("role", "user"), "content": m.get("content", "")})
+        messages.append({"role": "user", "content": query})
 
-            completion = self.groq_client.chat.completions.create(
-                model=settings.groq_model,
-                messages=messages,
-                temperature=0.4,
-                max_tokens=900,
-            )
-            ans = completion.choices[0].message.content.strip()
-            if ans and is_weak and "quiz" not in ans.lower() and "cheat sheet" not in ans.lower():
-                ans += f"\n\n> 💡 **Study Tip**: Since you've looked at **{topic}** recently, would you like a quick 3-question focused practice quiz or a handy formula sheet?"
-            return ans
-        except Exception as e:
-            log.warning("Groq inference error: %s — falling back to secondary provider", e)
-            return None
+        models_to_try = [settings.groq_model, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
+        for mdl in dict.fromkeys(models_to_try):
+            try:
+                completion = self.groq_client.chat.completions.create(
+                    model=mdl,
+                    messages=messages,
+                    temperature=0.4,
+                    max_tokens=900,
+                )
+                ans = completion.choices[0].message.content.strip()
+                if ans:
+                    return ans
+            except Exception as e:
+                log.warning("Groq model %s error: %s — trying alternate model", mdl, e)
+        return None
 
     def _generate_with_gemini(
         self,
@@ -525,27 +526,27 @@ class GeneralAssistantAgent:
         summary_memory: Optional[str],
         active_events: Optional[List[Dict[str, Any]]] = None
     ) -> Optional[str]:
-        """Generates a free-form tailored answer via Google Gemini."""
-        try:
-            system_prompt = self._build_system_prompt(
-                subject, topic, is_weak,
-                student_context, onboarding_context,
-                recent_messages, summary_memory,
-                active_events
-            )
-            response = self.gemini_client.models.generate_content(
-                model=settings.gemini_model,
-                contents=[
-                    {"role": "user", "parts": [{"text": f"{system_prompt}\n\nStudent Query: {query}"}]}
-                ]
-            )
-            ans = response.text.strip() if response and response.text else None
-            if ans and is_weak and "quiz" not in ans.lower() and "cheat sheet" not in ans.lower():
-                ans += f"\n\n> 💡 **Study Tip**: Since you've looked at **{topic}** recently, would you like a quick 3-question focused practice quiz or a handy formula sheet?"
-            return ans
-        except Exception as e:
-            log.warning("Gemini generation error: %s — falling back to contextual engine", e)
-            return None
+        """Generates a free-form tailored answer via Google Gemini with multi-model fallback."""
+        system_prompt = self._build_system_prompt(
+            subject, topic, is_weak,
+            student_context, onboarding_context,
+            recent_messages, summary_memory,
+            active_events
+        )
+        models_to_try = [settings.gemini_model, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        for mdl in dict.fromkeys(models_to_try):
+            try:
+                response = self.gemini_client.models.generate_content(
+                    model=mdl,
+                    contents=[
+                        {"role": "user", "parts": [{"text": f"{system_prompt}\n\nStudent Query: {query}"}]}
+                    ]
+                )
+                if response and response.text:
+                    return response.text.strip()
+            except Exception as e:
+                log.warning("Gemini model %s error: %s — trying alternate model", mdl, e)
+        return None
 
     def _generate_with_fallback(
         self,
@@ -561,33 +562,35 @@ class GeneralAssistantAgent:
     ) -> str:
         """
         Intelligent, natural fallback engine.
-        Answers the user's SPECIFIC question with genuine, varied content tailored to the
-        exact request intent (definition vs. detailed explanation vs. casual chat) without
-        any fixed boilerplate templates.
+        Answers general knowledge, engineering theory, code, and world facts dynamically.
         """
         q_lower = query.lower().strip()
         words_in_q = set(re.findall(r"\w+", q_lower))
         name = (student_context or {}).get("fullName", "Friend")
-
-        # Intent detection
-        is_definition_only = any(w in q_lower for w in ["definition", "define", "just tell", "what is meant by", "simple definition", "in short"])
-        is_detail_requested = any(w in q_lower for w in ["explain in detail", "in depth", "thoroughly", "detailed", "complete guide", "deep dive"])
-        is_casual = any(q_lower.startswith(w) for w in ["what's", "whats", "hey", "hi", "hello", "tell me about"])
+        first_name = name.split()[0] if name and name != "Friend" else (name or "Friend")
 
         # ── 0. World Facts & General Knowledge ─────────────────────────────────
-        if "prime minister" in q_lower or "pm of india" in q_lower or "pm india" in q_lower:
+        if "modi" in q_lower or "narendra" in q_lower or "prime minister" in q_lower or "pm of india" in q_lower or "pm india" in q_lower:
             return (
-                f"The Prime Minister of India is **Shri Narendra Modi**, who has been serving as the 14th Prime Minister of India since May 2014."
+                f"**Shri Narendra Damodardas Modi** is the 14th and current Prime Minister of India, serving since May 26, 2014.\n\n"
+                f"### Key Highlights & Background:\n"
+                f"• **Early Life**: Born on September 17, 1950, in Vadnagar, Gujarat. Joined the Rashtriya Swayamsevak Sangh (RSS) in his youth and later entered mainstream politics with the Bharatiya Janata Party (BJP).\n"
+                f"• **Chief Minister of Gujarat**: Served as the Chief Minister of Gujarat from October 2001 to May 2014 (longest-serving CM of Gujarat).\n"
+                f"• **Tenure as Prime Minister**:\n"
+                f"  - Led the National Democratic Alliance (NDA) to general election victories in 2014, 2019, and 2024.\n"
+                f"  - **Key National Flagship Initiatives**: Digital India, Make in India, Pradhan Mantri Jan Dhan Yojana, Swachh Bharat Abhiyan, Ayushman Bharat, Unified Payments Interface (UPI) expansion, and infrastructure modernization (PM Gati Shakti, Vande Bharat).\n"
+                f"  - **Global Engagement**: Hosted the 2023 G20 New Delhi Summit and represented India in Quad, BRICS, and multilateral climate forums.\n\n"
+                f"Feel free to ask if you'd like more details on specific policies, economic reforms, or governance milestones, {first_name}!"
             )
 
-        if "president of india" in q_lower:
+        if "president of india" in q_lower or "droupadi murmu" in q_lower:
             return (
-                f"The President of India is **Smt. Droupadi Murmu**, who assumed office as the 15th President of India in July 2022."
+                f"The President of India is **Smt. Droupadi Murmu**, who assumed office as the 15th President of India in July 2022 (the first tribal woman to hold India's highest constitutional office)."
             )
 
-        if "chief minister" in q_lower and ("telangana" in q_lower or "hyderabad" in q_lower) or "cm of telangana" in q_lower:
+        if "chief minister" in q_lower and ("telangana" in q_lower or "hyderabad" in q_lower) or "cm of telangana" in q_lower or "revanth" in q_lower:
             return (
-                f"The Chief Minister of Telangana is **Shri A. Revanth Reddy**, who took office in December 2023."
+                f"The Chief Minister of Telangana is **Shri A. Revanth Reddy**, who assumed office as the 2nd Chief Minister of Telangana in December 2023."
             )
 
         if "capital of india" in q_lower:
@@ -734,10 +737,16 @@ class GeneralAssistantAgent:
                 f"**Dr. C. Raghavendra** is Dean of Academics (Machine Learning), and **Dr. Y. Mohana Roopa** is Dean IQAC (Data Mining)."
             )
 
+        # General conversational response for any topic or query
+        if topic in ["Academic Inquiry", "General Conversation", "Standby", "General", "More Matter Sree"]:
+            return (
+                f"I'm here to help, {first_name}! You can ask me any question—whether it's general knowledge, explaining complex engineering concepts, debugging code, preparing for exams, or checking your campus schedule."
+            )
+
         return (
-            f"Here is the breakdown for **{topic}**, {first_name}:\n\n"
-            f"**{topic}** is an essential technical subject in {subject}. "
-            f"Would you like an algorithmic code example, architectural walkthrough, or practice problem on this topic?"
+            f"Here is an overview of **{topic}** in **{subject}**, {first_name}:\n\n"
+            f"**{topic}** is an important concept focusing on structured problem-solving, architectural efficiency, and scalable implementation. "
+            f"Feel free to ask for a code implementation, mathematical derivation, or real-world system architecture walkthrough!"
         )
 
     def _build_system_prompt(
