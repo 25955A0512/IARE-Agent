@@ -676,18 +676,36 @@ class GeneralAssistantAgent:
         first_name = name.split()[0] if name and name != "Friend" else (name or "Friend")
         if topic in ["Casual Interaction", "Academic Inquiry", "General Conversation", "Standby"]:
             return (
-                f"I'm all ears, {first_name}! Feel free to ask about your attendance, today's classes, syllabus topics, or walking directions across campus."
+                f"I'm all ears, {first_name}! Feel free to ask about your attendance, today's timetable, syllabus topics, faculty, or walking directions across campus."
             )
 
-        if is_definition_only:
+        # Check if student asked about timetable in general assistant
+        if "timetable" in q_lower or "time table" in q_lower or "schedule" in q_lower or "class" in q_lower:
+            today_sched = (student_context or {}).get("todaySchedule", [])
+            if today_sched:
+                lines = [f"Here is your class schedule, **{first_name}**: 📅\n"]
+                for s in today_sched:
+                    lines.append(f"• **{s.get('timeSlotStart')} - {s.get('timeSlotEnd')}**: **{s.get('subjectName')}**\n  📍 Venue: *{s.get('room')}* | 👤 Faculty: *{s.get('facultyName')}*")
+                return "\n".join(lines)
+
+        # Check if student asked about attendance in general assistant
+        if "attendance" in q_lower or "bunk" in q_lower:
+            att = (student_context or {}).get("overallAttendance", 0.0)
+            bunks = (student_context or {}).get("safeBunksAvailable", 0)
+            return f"Your overall attendance is **{att:.1f}%** ({bunks} safe bunk classes available above 75%), **{first_name}**!"
+
+        # Check if student asked about faculty in general assistant
+        if "faculty" in q_lower or "teacher" in q_lower or "professor" in q_lower or "hod" in q_lower:
             return (
-                f"**{topic}** in {subject} is a fundamental engineering concept focused on structured problem-solving, architectural efficiency, and scalable implementation."
+                f"For the CSE Department, **Dr. K. Srinivasa Rao** is the Head of Department (`cse_hod@iare.ac.in`), "
+                f"**Dr. C. Raghavendra** is Dean of Academics (Machine Learning), and **Dr. Y. Mohana Roopa** is Dean IQAC (Data Mining)."
             )
-        else:
-            return (
-                f"I'd love to help you with **{topic}**, {first_name}! "
-                f"Would you like a quick intuitive breakdown, a code/architecture walkthrough, or help with a specific homework problem?"
-            )
+
+        return (
+            f"Here is information on **{topic}** in **{subject}**, {first_name}:\n\n"
+            f"**{topic}** is a core engineering concept focusing on structured computation, optimal data representation, and system design. "
+            f"Feel free to ask for a specific code example, mathematical intuition, or syllabus breakdown!"
+        )
 
     def _build_system_prompt(
         self,
@@ -700,21 +718,47 @@ class GeneralAssistantAgent:
         summary_memory: Optional[str],
         active_events: Optional[List[Dict[str, Any]]] = None
     ) -> str:
-        """Assembles natural, supportive study-partner system instructions."""
-        name = (student_context or {}).get("fullName", "Student")
-        dept = (student_context or {}).get("department", "Engineering")
+        """Assembles natural, supportive study-partner system instructions with complete student & college telemetry."""
+        ctx = student_context or {}
+        name = ctx.get("fullName", "Student")
+        roll = ctx.get("rollNo", "N/A")
+        dept = ctx.get("department", "Computer Science and Engineering")
+        year = ctx.get("yearOfStudy", 2)
+        sem = ctx.get("semester", 4)
+        sec = ctx.get("section", "A")
+        att = ctx.get("overallAttendance", 0.0)
+        safe_bunks = ctx.get("safeBunksAvailable", 0)
+
+        # Timetable summary
+        today_sched = ctx.get("todaySchedule", [])
+        sched_lines = []
+        for s in today_sched:
+            sched_lines.append(f"  - {s.get('timeSlotStart')}-{s.get('timeSlotEnd')}: {s.get('subjectName')} (Room: {s.get('room')}, Faculty: {s.get('facultyName')})")
+        today_sched_text = "\n".join(sched_lines) if sched_lines else "No active periods right now / Free slot"
+
+        iare_knowledge_summary = (
+            "IARE College Directory & Key Facts:\n"
+            "- Principal: Dr. L. V. Narasimha Prasad (principal@iare.ac.in)\n"
+            "- Dean Academics: Dr. C. Raghavendra (dean-academics@iare.ac.in) — Specialization: Machine Learning\n"
+            "- Dean IQAC: Dr. Y. Mohana Roopa (iqac@iare.ac.in) — Specialization: Data Mining & Big Data\n"
+            "- Dean Student Affairs: Dr. Gandham Ohm (dean-studentaffairs@iare.ac.in)\n"
+            "- Head of CSE Department: Dr. K. Srinivasa Rao (cse_hod@iare.ac.in)\n"
+            "- Placements: Highest 58.5 LPA, Average 6.8 LPA. Top Recruiters: Amazon, Microsoft, TCS, Infosys, Cognizant, Wipro\n"
+            "- Location: Dundigal, Hyderabad (PIN 500043), near ORR Exit 5\n"
+            "- Autonomous Regulations: R23 / R22 with 75% minimum mandatory attendance."
+        )
 
         return (
-            "You are the IARE Campus AI Companion and Tutor for the Institute of Aeronautical Engineering (IARE).\n"
-            f"You are speaking with {name}, a student in {dept}.\n\n"
-            "Personality & Communication Style:\n"
-            "- You are like a brilliant, encouraging, warm college senior or study partner who genuinely wants the student to succeed.\n"
-            "- Speak naturally, engagingly, and directly—never sound robotic, dry, or like a customer support script.\n"
-            "- CRITICAL: Do NOT use any fixed boilerplate or rigid templates (e.g. NEVER use 'Core Idea / How It Works / Next Steps').\n"
-            "- Match your answer length, structure, and depth to what the student actually requested:\n"
-            "  * If the student asks for 'just the definition' or a quick answer, give a direct, concise 1-2 sentence definition.\n"
-            "  * If the student asks to 'explain in detail', provide a thorough explanation with clear intuition and examples.\n"
-            "  * If the student asks a casual question or greeting, give a warm, friendly, conversational response.\n"
-            "- Maintain complete technical accuracy at all times.\n"
-            f"- Topic context (internal only): {topic} in {subject}. (Do not output this as an artificial heading).\n"
+            "You are the IARE Campus AI Companion, an intelligent, empathetic, and top-tier academic AI assistant (like ChatGPT) for students at the Institute of Aeronautical Engineering (IARE).\n"
+            f"You are directly speaking with {name} (Roll No: {roll}), studying in {dept}, Year {year}, Sem {sem}, Section {sec}.\n\n"
+            f"Student's Live Academic Stats:\n"
+            f"- Overall Attendance: {att:.1f}% (Safe bunks buffer: {safe_bunks} classes)\n"
+            f"- Today's Schedule:\n{today_sched_text}\n\n"
+            f"{iare_knowledge_summary}\n\n"
+            "Instructions:\n"
+            "- Answer questions naturally, concisely, and accurately as a modern, brilliant AI companion.\n"
+            "- If the student asks about their classes, timetable, attendance, bunks, or courses, use their real academic telemetry directly.\n"
+            "- If the student asks about faculty or college leadership, provide real names, roles, and email addresses.\n"
+            "- If the student asks about academic, coding, math, or theoretical concepts, provide clear, intuitive explanations, examples, or code.\n"
+            "- Do NOT output any robotic placeholder quizzes or boilerplate templates.\n"
         )

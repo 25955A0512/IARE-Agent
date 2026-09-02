@@ -51,6 +51,7 @@ class StudentMonitorAgent:
         needed_75 = student_context.get("classesNeededFor75", 0)
         attendance_list = student_context.get("attendance", [])
         today_schedule = student_context.get("todaySchedule", [])
+        weekly_schedule = student_context.get("weeklySchedule", [])
         marks_list = student_context.get("marks", [])
         lab_list = student_context.get("labSubmissions", [])
         notices_list = student_context.get("notices", [])
@@ -68,7 +69,7 @@ class StudentMonitorAgent:
                 ),
             }
 
-        if any(w in q for w in ["who am i", "my profile", "my details", "dob", "date of birth", "my info", "student details", "blood group"]):
+        if any(w in q for w in ["who am i", "my profile", "my details", "dob", "date of birth", "my info", "student details", "blood group", "my roll"]):
             return {
                 "success": True,
                 "agent": "student_monitor",
@@ -83,27 +84,31 @@ class StudentMonitorAgent:
                 ),
             }
 
-        # 2. Lab Submissions & Deadlines
+        # 2. Course Faculty / Teacher inquiries
+        if any(w in q for w in ["faculty for", "teacher for", "who teaches", "who is the faculty", "who is teaching", "faculty of", "teacher of", "professor for", "instructor for"]):
+            return self._handle_faculty_query(name, q, today_schedule, weekly_schedule, attendance_list)
+
+        # 3. Lab Submissions & Deadlines
         if any(w in q for w in ["lab", "submission", "experiment", "due date", "deadline", "assignment"]):
             return self._handle_lab_submissions_query(name, lab_list)
 
-        # 3. Events & Circulars
+        # 4. Events & Circulars
         if any(w in q for w in ["event", "notice", "circular", "placement", "recruitment", "drive", "notification", "announcement"]):
             return self._handle_notices_query(name, notices_list)
 
-        # 4. Timetable & Schedule
-        if any(w in q for w in ["next class", "current class", "timetable", "schedule", "today's class", "where is my class", "period"]):
-            return self._handle_timetable_query(name, today_schedule)
+        # 5. Timetable & Schedule (handles 'time table', 'timetable', 'schedule', 'today's class', etc.)
+        if any(w in q for w in ["next class", "current class", "timetable", "time table", "schedule", "today's class", "today class", "classes today", "where is my class", "which class", "period", "periods"]):
+            return self._handle_timetable_query(name, today_schedule, weekly_schedule)
 
-        # 5. Marks & Evaluation
+        # 6. Marks & Evaluation
         if any(w in q for w in ["mark", "cie", "internal", "score", "grade"]):
             return self._handle_marks_query(name, roll_no, marks_list)
 
-        # 6. Bunk & Leave calculations
+        # 7. Bunk & Leave calculations
         if any(w in q for w in ["bunk", "miss", "leave", "skip", "recover", "reach 75"]):
             return self._handle_bunk_query(name, overall_att, safe_bunks, needed_75)
 
-        # 7. Default Attendance Report
+        # 8. Default Attendance Report
         return self._handle_attendance_query(name, roll_no, overall_att, status, safe_bunks, needed_75, attendance_list)
 
     def _handle_lab_submissions_query(self, name: str, lab_list: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -226,33 +231,135 @@ class StudentMonitorAgent:
                 ),
             }
 
-    def _handle_timetable_query(self, name: str, today_schedule: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Summarizes today's class schedule and current/next class."""
-        if not today_schedule:
+    def _handle_timetable_query(
+        self,
+        name: str,
+        today_schedule: List[Dict[str, Any]],
+        weekly_schedule: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """Summarizes today's class schedule, current/next class, or weekly schedule."""
+        if today_schedule:
+            lines = [f"Here is your daily schedule for today, **{name}**: 📅\n"]
+            for slot in today_schedule:
+                start = slot.get("timeSlotStart", "")
+                end = slot.get("timeSlotEnd", "")
+                sub = slot.get("subjectName", "Class")
+                room = slot.get("room", "Room")
+                faculty = slot.get("facultyName", "Faculty")
+                is_curr = slot.get("isCurrent", False)
+                is_nxt = slot.get("isNext", False)
+
+                badge = " 🔴 **[HAPPENING NOW]**" if is_curr else (" ⏱️ **[UP NEXT]**" if is_nxt else "")
+                lines.append(f"• **{start} – {end}**: **{sub}**{badge}\n  📍 Venue: *{room}* | 👤 Faculty: *{faculty}*")
+
+            lines.append("\nNeed walking directions to any of these classrooms? Just ask me!")
             return {
                 "success": True,
                 "agent": "student_monitor",
-                "message": f"📅 No classes scheduled for today, **{name}**! Enjoy your free time or use it for project prep. 🎉",
+                "message": "\n".join(lines),
             }
 
-        lines = [f"Here is your daily schedule for today, **{name}**: 📅\n"]
-        for slot in today_schedule:
-            start = slot.get("timeSlotStart", "")
-            end = slot.get("timeSlotEnd", "")
-            sub = slot.get("subjectName", "")
-            room = slot.get("room", "")
-            faculty = slot.get("facultyName", "")
-            is_curr = slot.get("isCurrent", False)
-            is_nxt = slot.get("isNext", False)
+        if weekly_schedule:
+            lines = [f"📅 You don't have active periods scheduled for this specific time slot, **{name}**. Here are your primary courses & timetable for the week:\n"]
+            # Group or list unique scheduled subjects
+            seen_subs = set()
+            for slot in weekly_schedule:
+                sub = slot.get("subjectName", "Subject")
+                if sub not in seen_subs:
+                    seen_subs.add(sub)
+                    fac = slot.get("facultyName", "Department Faculty")
+                    room = slot.get("room", "Assigned Classroom")
+                    time_slot = f"{slot.get('timeSlotStart', '')} - {slot.get('timeSlotEnd', '')}"
+                    lines.append(f"• **{sub}**\n  👤 Faculty: *{fac}* | 📍 Venue: *{room}* ({time_slot})")
 
-            badge = " 🔴 **[HAPPENING NOW]**" if is_curr else (" ⏱️ **[UP NEXT]**" if is_nxt else "")
-            lines.append(f"• **{start} – {end}**: {sub}{badge}\n  📍 Venue: *{room}* | 👤 Faculty: *{faculty}*")
+            lines.append("\nFeel free to ask about any specific day's timings or teacher!")
+            return {
+                "success": True,
+                "agent": "student_monitor",
+                "message": "\n".join(lines),
+            }
 
-        lines.append("\nNeed directions to any of these classrooms? Just ask me!")
         return {
             "success": True,
             "agent": "student_monitor",
-            "message": "\n".join(lines),
+            "message": f"📅 No classes scheduled for today, **{name}**! Enjoy your free time or use it for project prep. 🎉",
+        }
+
+    def _handle_faculty_query(
+        self,
+        name: str,
+        query: str,
+        today_schedule: List[Dict[str, Any]],
+        weekly_schedule: List[Dict[str, Any]],
+        attendance_list: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Finds course instructor / faculty for a specific subject query."""
+        q_clean = query.lower()
+        all_slots = (today_schedule or []) + (weekly_schedule or [])
+
+        # 1. Search student's active schedule for matching course
+        matched_faculty = []
+        for slot in all_slots:
+            sub = slot.get("subjectName", "")
+            fac = slot.get("facultyName", "")
+            room = slot.get("room", "")
+            if not sub or not fac:
+                continue
+            # Check overlap between query and subject words
+            sub_words = set(re.findall(r"\w+", sub.lower()))
+            q_words = set(re.findall(r"\w+", q_clean))
+            overlap = sub_words.intersection(q_words)
+            # Exclude common stop words
+            overlap = {w for w in overlap if w not in ["and", "or", "the", "for", "in", "of", "to", "who", "is", "faculty", "teacher", "professor"]}
+            if overlap or any(kw in q_clean for kw in sub.lower().split() if len(kw) > 3):
+                entry = f"• **{sub}**:\n  👤 Faculty: **{fac}**\n  📍 Classroom: *{room}*"
+                if entry not in matched_faculty:
+                    matched_faculty.append(entry)
+
+        if matched_faculty:
+            return {
+                "success": True,
+                "agent": "student_monitor",
+                "message": (
+                    f"Here is the faculty information for your courses, **{name}**: 🎓\n\n"
+                    + "\n\n".join(matched_faculty)
+                ),
+            }
+
+        # 2. Search department faculty directory for Data Mining, Machine Learning, etc.
+        if "data mining" in q_clean or "machine learning" in q_clean or "ml" in q_clean or "ai" in q_clean:
+            return {
+                "success": True,
+                "agent": "student_monitor",
+                "message": (
+                    f"Here is the faculty information for **Data Mining & Machine Learning** at IARE, **{name}**: 🎓\n\n"
+                    f"• **Data Mining & Big Data Analytics**: **Dr. Y. Mohana Roopa** (Professor & Dean IQAC, `y.mohanaroopa@iare.ac.in`)\n"
+                    f"• **Machine Learning & AI**: **Dr. C. Raghavendra** (Professor & Dean Academics, `c.raghavendra@iare.ac.in`)\n"
+                    f"• **Deep Learning & NLP**: **Dr. V. Sivakrishna** (Associate Professor, `v.sivakrishna@iare.ac.in`)\n"
+                    f"• **Department Head (CSE)**: **Dr. K. Srinivasa Rao** (Professor & HOD, `cse_hod@iare.ac.in`)"
+                ),
+            }
+
+        if "python" in q_clean or "programming" in q_clean:
+            return {
+                "success": True,
+                "agent": "student_monitor",
+                "message": (
+                    f"For Python and Programming courses, classes are conducted by the CSE Open Source & Full Stack lab faculty under **Dr. K. Srinivasa Rao** (HOD CSE, `cse_hod@iare.ac.in`)."
+                ),
+            }
+
+        # General faculty list
+        return {
+            "success": True,
+            "agent": "student_monitor",
+            "message": (
+                f"Here is your department leadership and faculty contacts for CSE, **{name}**:\n\n"
+                f"• **Head of Department (CSE)**: **Dr. K. Srinivasa Rao** (`cse_hod@iare.ac.in`)\n"
+                f"• **Dean of Academics (Machine Learning)**: **Dr. C. Raghavendra** (`dean-academics@iare.ac.in`)\n"
+                f"• **Dean IQAC (Data Mining)**: **Dr. Y. Mohana Roopa** (`iqac@iare.ac.in`)\n"
+                f"• **Principal**: **Dr. L. V. Narasimha Prasad** (`principal@iare.ac.in`)"
+            ),
         }
 
     def _handle_marks_query(self, name: str, roll_no: str, marks_list: List[Dict[str, Any]]) -> Dict[str, Any]:

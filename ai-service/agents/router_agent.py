@@ -58,27 +58,29 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
         }
 
         STUDENT_MONITOR_KEYWORDS = {
-            "attendance", "bunk", "leave", "skip", "timetable", "schedule",
-            "next class", "current class", "today's class", "my class", "period",
-            "cie marks", "internal marks", "internals", "marks", "score", "grade",
+            "attendance", "bunk", "leave", "skip", "timetable", "time table", "schedule",
+            "next class", "current class", "today's class", "today class", "my class", "classes today",
+            "which class", "period", "periods", "when is my class", "where is my class",
+            "cie marks", "internal marks", "internals", "marks", "score", "grade", "grades",
             "mentor", "counselor", "advisor", "samvidha", "75%",
             "who am i", "my profile", "my details", "dob", "date of birth",
-            "my name", "my info", "blood group", "my department", "my section",
-            "my lab submission", "my assignment",
+            "my name", "my info", "blood group", "my department", "my section", "my roll",
+            "my lab submission", "my assignment", "lab", "labs", "due date", "deadline",
+            "faculty for", "teacher for", "who teaches", "who is the faculty", "who is teaching",
+            "faculty of", "teacher of", "professor for", "instructor for"
         }
 
         NAV_KEYWORDS = {
             "where is", "how to get", "directions to", "route to", "navigate to",
             "way to", "location of", "path to", "reach", "from gate to",
-            "admin block", "library", "canteen", "auditorium", "placement cell",
-            "sports complex", "hostel", "open air theatre", "central library",
+            "admin block", "placement cell", "sports complex", "open air theatre",
             "mechanical lab", "aeronautical lab", "civil lab", "academic block"
         }
 
         # Official Website & Faculty Inquiries
         IARE_WEBSITE_KEYWORDS = {
             "iare", "institute of aeronautical engineering", "principal", "dean",
-            "hod", "head of department", "professor", "faculty", "lecturer", "teacher", "director",
+            "hod", "head of department", "director",
             "narasimha prasad", "raghavendra", "mohana roopa", "srinivasa rao",
             "padmaja", "ramu", "ashok babu", "sudhir sastry", "rizwana", "gandham ohm",
             "accreditation", "naac", "nba", "nirf", "autonomous", "regulation", "regulations", "r23", "r22",
@@ -101,12 +103,12 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
             agent = "general_assistant"
         elif any(re.search(rf"\b{re.escape(g)}\b", query) for g in GREETING_KEYWORDS):
             agent = "greeting"
-        elif any(kw in query for kw in IARE_WEBSITE_KEYWORDS):
-            agent = "iare_rag"
         elif any(kw in query for kw in STUDENT_MONITOR_KEYWORDS):
             agent = "student_monitor"
         elif any(kw in query for kw in NAV_KEYWORDS):
             agent = "navigation"
+        elif any(kw in query for kw in IARE_WEBSITE_KEYWORDS):
+            agent = "iare_rag"
         else:
             # Everything else routed to General Assistant Agent
             agent = "general_assistant"

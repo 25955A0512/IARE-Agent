@@ -77,7 +77,14 @@ def normalize_query(query: str) -> str:
     if not query:
         return ""
 
-    words = re.findall(r"\w+|[^\w\s]", query)
+    # Multi-word phrase normalizations
+    q_norm = query
+    q_norm = re.sub(r"\btime\s+table\b", "timetable", q_norm, flags=re.IGNORECASE)
+    q_norm = re.sub(r"\btime\s+tables\b", "timetable", q_norm, flags=re.IGNORECASE)
+    q_norm = re.sub(r"\broll\s+no\b", "roll number", q_norm, flags=re.IGNORECASE)
+    q_norm = re.sub(r"\bblood\s+grp\b", "blood group", q_norm, flags=re.IGNORECASE)
+
+    words = re.findall(r"\w+|[^\w\s]", q_norm)
     corrected_words = []
 
     for word in words:
