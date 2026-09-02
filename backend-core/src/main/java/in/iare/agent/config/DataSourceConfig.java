@@ -14,10 +14,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
- * DataSourceConfig — Probes Supabase connectivity at startup.
- * If Supabase host is reachable: uses PostgreSQL (Supabase).
- * If not (no internet / DNS failure): silently falls back to H2 in-memory DB.
- * This ensures the app always starts for local development even without internet.
+ * DataSourceConfig — Handles database connection with automatic URL normalization.
+ * Normalizes postgresql:// and postgres:// to jdbc:postgresql://.
+ * Probes host reachability and connects via PostgreSQL driver, with fallback to H2 for offline dev.
  */
 @Configuration
 public class DataSourceConfig {
@@ -36,36 +35,56 @@ public class DataSourceConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        // If URL is a Postgres URL, probe connectivity first
-        if (configuredUrl.startsWith("jdbc:postgresql://")) {
-            String host = extractHost(configuredUrl);
-            int port = extractPort(configuredUrl);
-            boolean reachable = isReachable(host, port, 3000);
+        String url = normalizeJdbcUrl(configuredUrl);
+
+        // PostgreSQL configuration
+        if (url.startsWith("jdbc:postgresql://")) {
+            String host = extractHost(url);
+            int port = extractPort(url);
+            boolean reachable = isReachable(host, port, 4000);
             if (!reachable) {
-                log.warn("DataSourceConfig: Supabase host '{}:{}' is unreachable — falling back to H2 in-memory database for local development.", host, port);
+                log.warn("DataSourceConfig: PostgreSQL host '{}:{}' is unreachable — falling back to H2 in-memory database for local dev.", host, port);
                 return buildH2DataSource();
             }
-            log.info("DataSourceConfig: Supabase host '{}:{}' is reachable — using PostgreSQL.", host, port);
-            return buildPostgresDataSource();
+            log.info("DataSourceConfig: PostgreSQL host '{}:{}' is reachable — connecting with org.postgresql.Driver.", host, port);
+            return buildPostgresDataSource(url);
         }
 
-        // Already an H2 URL or other
-        log.info("DataSourceConfig: Using configured datasource URL: {}", maskUrl(configuredUrl));
-        return buildDataSource(configuredUrl, username, password, "org.h2.Driver");
+        // H2 or fallback
+        log.info("DataSourceConfig: Using datasource URL: {}", maskUrl(url));
+        String driver = url.contains("postgresql") ? "org.postgresql.Driver" : "org.h2.Driver";
+        return buildDataSource(url, username, password, driver);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    private DataSource buildPostgresDataSource() {
+    private String normalizeJdbcUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return "jdbc:h2:mem:iare_agent;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+        }
+        String trimmed = rawUrl.trim();
+        if (trimmed.startsWith("postgres://")) {
+            return trimmed.replaceFirst("postgres://", "jdbc:postgresql://");
+        } else if (trimmed.startsWith("postgresql://")) {
+            return trimmed.replaceFirst("postgresql://", "jdbc:postgresql://");
+        }
+        return trimmed;
+    }
+
+    private DataSource buildPostgresDataSource(String jdbcUrl) {
         HikariConfig cfg = new HikariConfig();
-        cfg.setJdbcUrl(configuredUrl);
-        cfg.setUsername(username);
-        cfg.setPassword(password);
+        cfg.setJdbcUrl(jdbcUrl);
+        if (username != null && !username.isBlank() && !"sa".equals(username)) {
+            cfg.setUsername(username);
+        }
+        if (password != null && !password.isBlank()) {
+            cfg.setPassword(password);
+        }
         cfg.setDriverClassName("org.postgresql.Driver");
-        cfg.setConnectionTimeout(8000);
-        cfg.setMaximumPoolSize(5);
+        cfg.setConnectionTimeout(15000);
+        cfg.setMaximumPoolSize(10);
         cfg.setMinimumIdle(1);
-        cfg.setPoolName("IARESupa-Pool");
+        cfg.setPoolName("IAREPostgres-Pool");
         return new HikariDataSource(cfg);
     }
 
@@ -80,7 +99,7 @@ public class DataSourceConfig {
         cfg.setUsername(user);
         cfg.setPassword(pass);
         cfg.setDriverClassName(driver);
-        cfg.setConnectionTimeout(5000);
+        cfg.setConnectionTimeout(10000);
         cfg.setMaximumPoolSize(10);
         cfg.setPoolName("IARE-Pool");
         return new HikariDataSource(cfg);
@@ -96,10 +115,12 @@ public class DataSourceConfig {
     }
 
     private String extractHost(String jdbcUrl) {
-        // jdbc:postgresql://host:port/db?...
         try {
-            String withoutScheme = jdbcUrl.replace("jdbc:postgresql://", "");
-            String hostPort = withoutScheme.split("/")[0];
+            String clean = jdbcUrl.replace("jdbc:postgresql://", "");
+            String hostPort = clean.split("/")[0];
+            if (hostPort.contains("@")) {
+                hostPort = hostPort.substring(hostPort.indexOf("@") + 1);
+            }
             return hostPort.contains(":") ? hostPort.split(":")[0] : hostPort;
         } catch (Exception e) {
             return "localhost";
@@ -108,8 +129,11 @@ public class DataSourceConfig {
 
     private int extractPort(String jdbcUrl) {
         try {
-            String withoutScheme = jdbcUrl.replace("jdbc:postgresql://", "");
-            String hostPort = withoutScheme.split("/")[0];
+            String clean = jdbcUrl.replace("jdbc:postgresql://", "");
+            String hostPort = clean.split("/")[0];
+            if (hostPort.contains("@")) {
+                hostPort = hostPort.substring(hostPort.indexOf("@") + 1);
+            }
             if (hostPort.contains(":")) {
                 return Integer.parseInt(hostPort.split(":")[1]);
             }
@@ -118,6 +142,6 @@ public class DataSourceConfig {
     }
 
     private String maskUrl(String url) {
-        return url.replaceAll("password=[^&?]*", "password=***");
+        return url.replaceAll(":[^:@/]+@", ":***@");
     }
 }
