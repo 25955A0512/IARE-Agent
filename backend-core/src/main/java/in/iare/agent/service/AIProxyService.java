@@ -245,7 +245,16 @@ public class AIProxyService {
         String answer;
         String agentType = "student_monitor";
 
-        if (q.contains("time table") || q.contains("timetable") || q.contains("schedule") || q.contains("today") || q.contains("class") || q.contains("period")) {
+        if (q.contains("prime minister") || q.contains("pm of india") || q.contains("pm india")) {
+            agentType = "general_assistant";
+            answer = "The Prime Minister of India is **Shri Narendra Modi**, who has been serving as the 14th Prime Minister of India since May 2014.";
+        } else if (q.contains("president of india")) {
+            agentType = "general_assistant";
+            answer = "The President of India is **Smt. Droupadi Murmu**, who assumed office as the 15th President of India in July 2022.";
+        } else if (q.contains("chief minister") && (q.contains("telangana") || q.contains("hyderabad")) || q.contains("cm of telangana")) {
+            agentType = "general_assistant";
+            answer = "The Chief Minister of Telangana is **Shri A. Revanth Reddy**, who assumed office in December 2023.";
+        } else if (q.contains("time table") || q.contains("timetable") || q.contains("schedule") || q.contains("today") || q.contains("class") || q.contains("period")) {
             if (dash != null && dash.getTodaySchedule() != null && !dash.getTodaySchedule().isEmpty()) {
                 StringBuilder sb = new StringBuilder("Here is your daily schedule for today, **" + name + "**: 📅\n\n");
                 for (var s : dash.getTodaySchedule()) {

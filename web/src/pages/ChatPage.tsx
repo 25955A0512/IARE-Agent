@@ -23,6 +23,7 @@ import { StudentMonitorModal } from '@/components/StudentMonitorModal'
 import { OnboardingModal } from '@/components/OnboardingModal'
 import { ChatHistoryDrawer } from '@/components/ChatHistoryDrawer'
 import { EventsNoticesModal } from '@/components/EventsNoticesModal'
+import { TechnicalAssessmentModal } from '@/components/TechnicalAssessmentModal'
 import { springs } from '@/tokens'
 import {
   Plus,
@@ -43,6 +44,7 @@ import {
   AlertTriangle,
   Lightbulb,
   Square,
+  Award,
   Volume2,
   PhoneOff,
   Image as ImageIcon,
@@ -103,6 +105,7 @@ export default function ChatPage() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false)
+  const [isAssessmentOpen, setIsAssessmentOpen] = useState(false)
   const [unreadNotifs, setUnreadNotifs] = useState<StudentEventNotification[]>([])
   const [dismissedBannerIds, setDismissedBannerIds] = useState<number[]>([])
 
@@ -657,24 +660,34 @@ export default function ChatPage() {
 
           <div style={styles.quickActionsScroll}>
             {[
-              { icon: <BarChart3 size={14} />, label: 'My Attendance', query: 'What is my current attendance percentage?' },
-              { icon: <Calculator size={14} />, label: 'Bunk Calculator', query: 'Can I bunk classes today without dropping below 75%?' },
-              { icon: <Clock size={14} />, label: 'Next Class', query: 'Where and when is my next class scheduled?' },
-              { icon: <Compass size={14} />, label: 'Library Directions', query: 'Where is the Central Library and how do I get there?' },
-              { icon: <ImageIcon size={14} />, label: 'Binary Search Tree', query: 'Explain Binary Search Trees with a conceptual diagram and time complexity' },
-              { icon: <Zap size={14} />, label: 'OS Deadlocks', query: 'Explain Coffman conditions for deadlocks and Bankers algorithm with a diagram' },
+              { icon: <BarChart3 size={14} />, label: 'Academic Standing', action: () => handleSend('What is my current academic standing and overall attendance percentage?') },
+              { icon: <Clock size={14} />, label: "Today's Schedule", action: () => handleSend('What is my class schedule and timetable for today?') },
+              { icon: <Zap size={14} />, label: 'Lab Submissions', action: () => handleSend('Show my upcoming lab experiments, submissions, and deadlines') },
+              { icon: <GraduationCap size={14} />, label: 'Faculty Directory', action: () => handleSend('Who is the faculty for Data Mining and Machine Learning in CSE?') },
+              { icon: <ImageIcon size={14} />, label: 'Data Structures & Algorithms', action: () => handleSend('Explain Binary Search Trees with time complexities, code, and operations') },
+              { icon: <Award size={14} />, label: 'Start Technical Assessment', action: () => setIsAssessmentOpen(true) },
             ].map((chip, idx) => (
               <motion.button
                 key={idx}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 transition={springs.snappy}
-                style={styles.quickActionChip}
-                onClick={() => handleSend(chip.query)}
+                style={{
+                  ...styles.quickActionChip,
+                  border: chip.label === 'Start Technical Assessment' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                  background: chip.label === 'Start Technical Assessment' ? 'var(--accent-subtle)' : 'var(--bg-sunken)',
+                }}
+                onClick={chip.action}
                 disabled={loading}
               >
                 <span style={styles.quickActionIcon}>{chip.icon}</span>
-                <span style={styles.quickActionLabel}>{chip.label}</span>
+                <span style={{
+                  ...styles.quickActionLabel,
+                  fontWeight: chip.label === 'Start Technical Assessment' ? 700 : 500,
+                  color: chip.label === 'Start Technical Assessment' ? 'var(--accent-color)' : 'var(--text-primary)',
+                }}>
+                  {chip.label}
+                </span>
               </motion.button>
             ))}
           </div>
@@ -794,6 +807,15 @@ export default function ChatPage() {
         onClose={() => setIsHistoryOpen(false)}
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
+      />
+
+      <TechnicalAssessmentModal
+        isOpen={isAssessmentOpen}
+        onClose={() => setIsAssessmentOpen(false)}
+        onComplete={(subject, score, total) => {
+          setIsAssessmentOpen(false)
+          handleSend(`I completed my proctored assessment in ${subject} with score ${score}/${total}! What areas should I focus on next?`)
+        }}
       />
 
       <OnboardingModal

@@ -91,6 +91,11 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
             "website", "iare.ac.in", "official website"
         }
 
+        ASSESSMENT_KEYWORDS = {
+            "assessment", "start test", "take test", "start exam", "technical quiz", "take quiz",
+            "conduct exam", "proctored exam", "quiz on", "exam on", "test my knowledge"
+        }
+
         # Check if query asks for college external location vs internal campus navigation
         is_college_location = any(kw in query for kw in [
             "where is iare", "where is college", "where is the college", "college located",
@@ -103,6 +108,8 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
             agent = "general_assistant"
         elif any(re.search(rf"\b{re.escape(g)}\b", query) for g in GREETING_KEYWORDS):
             agent = "greeting"
+        elif any(kw in query for kw in ASSESSMENT_KEYWORDS):
+            agent = "assessment"
         elif any(kw in query for kw in STUDENT_MONITOR_KEYWORDS):
             agent = "student_monitor"
         elif any(kw in query for kw in NAV_KEYWORDS):
@@ -201,6 +208,38 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
             }
         return {**state, "result": result}
 
+    def run_assessment(state: RouterState) -> RouterState:
+        """Run the Engineering Technical Assessment Engine."""
+        from agents.assessment_engine import AssessmentEngine
+        engine = AssessmentEngine()
+        q = state["query"].lower()
+        topic_id = "data_structures"
+        if "os" in q or "operating system" in q or "deadlock" in q:
+            topic_id = "operating_systems"
+        elif "ml" in q or "machine learning" in q or "ai" in q:
+            topic_id = "machine_learning"
+        elif "dbms" in q or "database" in q or "sql" in q:
+            topic_id = "database_systems"
+
+        assessment_data = engine.start_assessment(topic_id)
+        msg_lines = [
+            f"🎯 **{assessment_data['title']}** ({assessment_data['duration_minutes']} Mins Timed Assessment)\n",
+            "Here are your technical questions. You can submit your answers anytime or click **'Start Technical Assessment'** in the control panel for an interactive timed proctored exam!\n"
+        ]
+        for q_item in assessment_data["questions"]:
+            msg_lines.append(f"**Q{q_item['id']}: {q_item['question']}**")
+            for idx, opt in enumerate(q_item["options"]):
+                msg_lines.append(f"  {chr(65 + idx)}. {opt}")
+            msg_lines.append("")
+
+        result = {
+            "success": True,
+            "agent": "assessment",
+            "message": "\n".join(msg_lines),
+            "assessment_data": assessment_data,
+        }
+        return {**state, "result": result}
+
     def route(state: RouterState) -> str:
         """Conditional edge — decide which node to run next."""
         return state["agent"]
@@ -212,6 +251,7 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
     graph.add_node("navigation", run_navigation)
     graph.add_node("student_monitor", run_student_monitor)
     graph.add_node("iare_rag", run_iare_rag)
+    graph.add_node("assessment", run_assessment)
     graph.add_node("general_assistant", run_general_assistant)
 
     graph.set_entry_point("classify")
@@ -223,6 +263,7 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
             "navigation": "navigation",
             "student_monitor": "student_monitor",
             "iare_rag": "iare_rag",
+            "assessment": "assessment",
             "general_assistant": "general_assistant",
         }
     )
@@ -230,8 +271,7 @@ def build_router(nav_agent, student_agent=None, general_agent=None, iare_rag_age
     graph.add_edge("navigation", END)
     graph.add_edge("student_monitor", END)
     graph.add_edge("iare_rag", END)
+    graph.add_edge("assessment", END)
     graph.add_edge("general_assistant", END)
 
-    compiled = graph.compile()
-    log.info("LangGraph router compiled with Navigation, StudentMonitor, IARERag, and GeneralAssistant agents")
-    return compiled
+    return graph.compile()

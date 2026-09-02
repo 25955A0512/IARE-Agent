@@ -574,12 +574,33 @@ class GeneralAssistantAgent:
         is_detail_requested = any(w in q_lower for w in ["explain in detail", "in depth", "thoroughly", "detailed", "complete guide", "deep dive"])
         is_casual = any(q_lower.startswith(w) for w in ["what's", "whats", "hey", "hi", "hello", "tell me about"])
 
+        # ── 0. World Facts & General Knowledge ─────────────────────────────────
+        if "prime minister" in q_lower or "pm of india" in q_lower or "pm india" in q_lower:
+            return (
+                f"The Prime Minister of India is **Shri Narendra Modi**, who has been serving as the 14th Prime Minister of India since May 2014."
+            )
+
+        if "president of india" in q_lower:
+            return (
+                f"The President of India is **Smt. Droupadi Murmu**, who assumed office as the 15th President of India in July 2022."
+            )
+
+        if "chief minister" in q_lower and ("telangana" in q_lower or "hyderabad" in q_lower) or "cm of telangana" in q_lower:
+            return (
+                f"The Chief Minister of Telangana is **Shri A. Revanth Reddy**, who took office in December 2023."
+            )
+
+        if "capital of india" in q_lower:
+            return "The capital of India is **New Delhi**."
+
+        if "capital of telangana" in q_lower:
+            return "The capital of Telangana is **Hyderabad**."
+
         # ── 1. Artificial Intelligence & Machine Learning ──────────────────────
         if "artificial intelligence" in q_lower or "ai" in words_in_q or "artificial" in words_in_q:
             if is_definition_only:
                 return (
-                    f"**Artificial Intelligence (AI)** is the branch of computer science dedicated to creating systems or machines capable of performing tasks that typically require human intelligence—such as reasoning, learning from experience, solving complex problems, understanding language, and recognizing patterns.\n\n"
-                    f"In short: It's about engineering software that can perceive its environment and take actions to achieve specific goals!"
+                    f"**Artificial Intelligence (AI)** is the branch of computer science dedicated to creating systems capable of performing tasks that typically require human intelligence—such as reasoning, learning from data, visual perception, and natural language understanding."
                 )
             elif is_detail_requested:
                 return (
@@ -587,73 +608,75 @@ class GeneralAssistantAgent:
                     f"### 🧠 What is Artificial Intelligence?\n"
                     f"At its core, **Artificial Intelligence** is the science and engineering of making machines intelligent. It encompasses everything from rule-based expert systems to self-learning neural networks.\n\n"
                     f"### 🎯 The 3 Primary Levels of AI:\n"
-                    f"1. **Narrow AI (ANI)**: Designed for dedicated tasks (e.g., Siri, ChatGPT, AlphaGo, Tesla Autopilot). This is the only type of AI that exists today.\n"
+                    f"1. **Narrow AI (ANI)**: Designed for dedicated tasks (e.g., ChatGPT, AlphaGo, Tesla Autopilot). This is the only type of AI that exists today.\n"
                     f"2. **General AI (AGI)**: Theoretical AI that possesses human-level cognitive ability across any intellectual task.\n"
                     f"3. **Super AI (ASI)**: Hypothetical AI that surpasses human intellect and capability in every field.\n\n"
                     f"### 🔬 Major Branches of AI:\n"
                     f"• **Machine Learning (ML)**: Algorithms that learn from data rather than explicit rule programming (e.g., Random Forests, SVMs).\n"
-                    f"• **Deep Learning (DL)**: Multi-layer artificial neural networks modeled loosely after human biological neurons.\n"
+                    f"• **Deep Learning (DL)**: Multi-layer artificial neural networks modeled loosely after biological neural pathways.\n"
                     f"• **Natural Language Processing (NLP)**: Enabling computers to understand, interpret, and generate human language.\n"
-                    f"• **Computer Vision**: Allowing machines to extract meaningful information from digital images and video streams.\n\n"
-                    f"Would you like to explore how a specific AI subfield (like Machine Learning or Neural Networks) works under the hood?"
+                    f"• **Computer Vision**: Allowing machines to extract meaningful information from digital images and video streams."
                 )
             else:
                 return (
-                    f"Great question, **{name}**! Simply put, **Artificial Intelligence (AI)** is all about building computer systems that can think, learn, and make decisions similar to human beings.\n\n"
-                    f"Instead of writing thousands of rigid if-else rules for every single situation, modern AI learns patterns directly from data—which is why it can recognize your face, translate languages on the fly, beat grandmasters at chess, and generate code!\n\n"
-                    f"Think of **AI** as the broad umbrella, with **Machine Learning** as the primary engine inside it, and **Deep Learning** (neural networks) powering the most advanced breakthroughs today.\n\n"
-                    f"What aspect of AI are you most curious about—the math, the algorithms, or real-world applications?"
+                    f"**Artificial Intelligence (AI)** is the science of building software and machines that can perceive, learn, reason, and solve problems like human beings, **{name}**.\n\n"
+                    f"Modern AI is powered by **Machine Learning** and **Deep Neural Networks**, allowing computers to recognize patterns in massive datasets rather than relying on rigid if-else rules. "
+                    f"What specific AI subfield or algorithm would you like to explore?"
                 )
 
         # ── 2. Machine Learning ────────────────────────────────────────────────
         if "machine learning" in q_lower or "ml" in words_in_q:
             if is_definition_only:
                 return (
-                    f"**Machine Learning (ML)** is a subset of AI where computer algorithms improve their performance on a specific task automatically through experience and data, without being explicitly programmed."
+                    f"**Machine Learning (ML)** is a subset of AI where algorithms discover patterns in data and improve their performance on tasks automatically through experience, without explicit rule programming."
                 )
             return (
-                f"**Machine Learning (ML)** is the engine behind modern AI, **{name}**!\n\n"
-                f"Instead of hardcoding rules, you feed an algorithm training data, and it discovers the underlying mathematical patterns on its own.\n\n"
+                f"**Machine Learning (ML)** is the algorithmic engine behind modern AI, **{name}**!\n\n"
                 f"### The 3 Core Paradigms:\n"
-                f"1. **Supervised Learning**: Training with labeled pairs (Input $\\to$ Known Output). Examples: Predicting housing prices (Regression) or classifying spam emails (Classification).\n"
-                f"2. **Unsupervised Learning**: Finding hidden patterns in unlabeled data. Examples: Customer segmentation (K-Means Clustering) or anomaly detection.\n"
-                f"3. **Reinforcement Learning**: An agent learns through trial-and-error using a system of rewards and penalties (e.g., self-driving cars, game AI).\n\n"
-                f"Would you like to see a quick code example using Python's Scikit-Learn?"
+                f"1. **Supervised Learning**: Training with labeled input-output pairs (X → Y). E.g., Linear Regression, Decision Trees, Support Vector Machines (SVMs).\n"
+                f"2. **Unsupervised Learning**: Discovering intrinsic patterns in unlabeled data. E.g., K-Means Clustering, PCA Dimensionality Reduction.\n"
+                f"3. **Reinforcement Learning**: An autonomous agent optimizes actions via reward signals in an environment (e.g., robotics, game AI)."
             )
 
         # ── 3. TCP vs UDP ──────────────────────────────────────────────────────
-        if "tcp" in q_lower and "udp" in q_lower:
+        if "tcp" in q_lower and "udp" in q_lower or "osi" in q_lower:
             if is_definition_only:
                 return (
-                    f"**TCP (Transmission Control Protocol)** is a connection-oriented, reliable protocol that guarantees in-order packet delivery using acknowledgments. **UDP (User Datagram Protocol)** is a connectionless, lightweight protocol that transmits packets as fast as possible without delivery guarantees or retransmissions."
+                    f"**TCP** is connection-oriented, reliable, and guarantees in-order packet delivery using acknowledgments. **UDP** is connectionless, lightweight, and transmits packets with minimal latency without delivery guarantees."
                 )
             return (
-                f"Thinking about **TCP vs. UDP** comes down to **reliability vs. speed**, **{name}**:\n\n"
+                f"**TCP vs. UDP Protocol Comparison**, **{name}**:\n\n"
                 f"| Feature | **TCP** | **UDP** |\n"
                 f"| :--- | :--- | :--- |\n"
                 f"| **Connection** | 3-Way Handshake (SYN → SYN-ACK → ACK) | Connectionless (fires packets immediately) |\n"
-                f"| **Reliability** | 100% guaranteed (resends dropped packets) | Best-effort (dropped packets are ignored) |\n"
+                f"| **Reliability** | 100% guaranteed (retransmits lost packets) | Best-effort (dropped packets are ignored) |\n"
                 f"| **Packet Order** | Strict in-order delivery via sequence numbers | Packets may arrive out of order |\n"
-                f"| **Use Cases** | Web pages (HTTP/HTTPS), email, file downloads | Online gaming, video calls (Zoom), live streaming |\n\n"
-                f"💡 **Analogy**: TCP is like a registered letter requiring a physical signature; UDP is like a live megaphone broadcast."
+                f"| **Use Cases** | Web (HTTP/HTTPS), Email, File Transfer | Real-time gaming, VoIP, Video Streaming |"
             )
 
-        # ── 4. Binary Search Trees ─────────────────────────────────────────────
+        # ── 4. Binary Search Trees & Sorting ──────────────────────────────────
         if "tree" in q_lower or "bst" in q_lower or "avl" in q_lower:
             if is_definition_only:
                 return (
                     f"A **Binary Search Tree (BST)** is a node-based binary tree data structure where for every node, all values in its left subtree are strictly smaller, and all values in its right subtree are strictly greater."
                 )
             return (
-                f"Binary Search Trees are a fundamental data structure, **{name}**! Here is how they work:\n\n"
-                f"### 🌲 The Invariant Rule:\n"
-                f"For any node with key $K$:\n"
-                f"• Left Subtree $< K$\n"
-                f"• Right Subtree $> K$\n\n"
-                f"### Key Operations & Time Complexity:\n"
-                f"• **Search / Insert / Delete**: Average $\\mathcal{O}(\\log N)$, Worst-case $\\mathcal{O}(N)$ if the tree becomes unbalanced.\n"
-                f"• **Inorder Traversal (Left → Root → Right)**: Always yields values in **sorted ascending order**!\n\n"
-                f"To prevent $\\mathcal{O}(N)$ degradation, self-balancing trees like **AVL Trees** automatically rotate nodes when height differences exceed $\\pm 1$."
+                f"**Binary Search Trees (BST)**, **{name}**:\n\n"
+                f"### 🌲 The Core BST Property:\n"
+                f"For every node with value K:\n"
+                f"• Left Subtree < K\n"
+                f"• Right Subtree > K\n\n"
+                f"### Key Properties:\n"
+                f"• **Search / Insert / Delete Time**: O(log N) average, O(N) worst-case (skewed tree).\n"
+                f"• **Inorder Traversal**: Always visits nodes in **strictly sorted ascending order**!\n"
+                f"• **Self-Balancing (AVL / Red-Black Trees)**: Rotate subtrees dynamically to guarantee O(log N) height balance."
+            )
+
+        if "dijkstra" in q_lower:
+            return (
+                f"**Dijkstra's Algorithm** finds the shortest path from a single source node to all other vertices in a weighted graph with **non-negative edge weights**.\n\n"
+                f"• **Greedy Approach**: Repeatedly selects the unvisited vertex with minimal tentative distance using a Min-Priority Queue.\n"
+                f"• **Time Complexity**: O((V + E) log V) with a binary heap, O(E + V log V) with a Fibonacci heap."
             )
 
         # ── 5. Deadlocks & Banker's Algorithm ──────────────────────────────────
@@ -663,20 +686,30 @@ class GeneralAssistantAgent:
                     f"A **Deadlock** is an operating system state where a set of processes are permanently blocked because each process is holding resources while waiting for other resources held by other processes in the same set."
                 )
             return (
-                f"Deadlocks happen when processes get stuck in a mutual waiting circle, **{name}**!\n\n"
+                f"**Deadlocks in Operating Systems**, **{name}**:\n\n"
                 f"### The 4 Coffman Conditions (Must ALL hold):\n"
-                f"1. **Mutual Exclusion**: Resources cannot be shared simultaneously.\n"
-                f"2. **Hold & Wait**: A process holds one resource while requesting another.\n"
-                f"3. **No Preemption**: Resources cannot be forcibly taken away.\n"
-                f"4. **Circular Wait**: Process $P_1$ waits for $P_2$, which waits for $P_3 \\dots$ which waits for $P_1$.\n\n"
-                f"🛠️ **Resolution**: Use **Banker's Algorithm** for deadlock avoidance by verifying if granting a resource keeps the system in a safe state."
+                f"1. **Mutual Exclusion**: Resources cannot be shared concurrently.\n"
+                f"2. **Hold & Wait**: A process holds assigned resources while requesting new ones.\n"
+                f"3. **No Preemption**: Resources cannot be forcibly reclaimed from a running process.\n"
+                f"4. **Circular Wait**: $P_1 \\to P_2 \\to P_3 \\dots \\to P_1$ in a cyclic dependency chain.\n\n"
+                f"🛠️ **Banker's Algorithm**: Avoids deadlocks by simulating allocation and ensuring a **Safe State** exists before granting requests."
             )
 
-        # ── 6. Conversational / Open Inquiry ──────────────────────────────────
+        # ── 6. Database & ACID Properties ─────────────────────────────────────
+        if "acid" in q_lower or "database" in q_lower or "normalization" in q_lower:
+            return (
+                f"**ACID Properties in DBMS**, **{name}**:\n\n"
+                f"• **Atomicity**: All operations succeed, or none do (All-or-Nothing transaction).\n"
+                f"• **Consistency**: The database transitions only between valid states satisfying all constraints.\n"
+                f"• **Isolation**: Concurrent transactions execute as if they were running serially without interference.\n"
+                f"• **Durability**: Committed changes persist permanently, even in the event of hardware or power crashes."
+            )
+
+        # ── 7. Conversational / Open Inquiry ──────────────────────────────────
         first_name = name.split()[0] if name and name != "Friend" else (name or "Friend")
         if topic in ["Casual Interaction", "Academic Inquiry", "General Conversation", "Standby"]:
             return (
-                f"I'm all ears, {first_name}! Feel free to ask about your attendance, today's timetable, syllabus topics, faculty, or walking directions across campus."
+                f"I'm all ears, {first_name}! Feel free to ask about your attendance, today's timetable, syllabus concepts, faculty details, or campus directions."
             )
 
         # Check if student asked about timetable in general assistant
@@ -692,7 +725,7 @@ class GeneralAssistantAgent:
         if "attendance" in q_lower or "bunk" in q_lower:
             att = (student_context or {}).get("overallAttendance", 0.0)
             bunks = (student_context or {}).get("safeBunksAvailable", 0)
-            return f"Your overall attendance is **{att:.1f}%** ({bunks} safe bunk classes available above 75%), **{first_name}**!"
+            return f"Your overall attendance is **{att:.1f}%** ({bunks} safe buffer classes available above 75%), **{first_name}**!"
 
         # Check if student asked about faculty in general assistant
         if "faculty" in q_lower or "teacher" in q_lower or "professor" in q_lower or "hod" in q_lower:
@@ -702,9 +735,9 @@ class GeneralAssistantAgent:
             )
 
         return (
-            f"Here is information on **{topic}** in **{subject}**, {first_name}:\n\n"
-            f"**{topic}** is a core engineering concept focusing on structured computation, optimal data representation, and system design. "
-            f"Feel free to ask for a specific code example, mathematical intuition, or syllabus breakdown!"
+            f"Here is the breakdown for **{topic}**, {first_name}:\n\n"
+            f"**{topic}** is an essential technical subject in {subject}. "
+            f"Would you like an algorithmic code example, architectural walkthrough, or practice problem on this topic?"
         )
 
     def _build_system_prompt(
