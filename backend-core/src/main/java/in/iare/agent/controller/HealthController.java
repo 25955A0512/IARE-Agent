@@ -13,10 +13,9 @@ import java.util.Map;
  * Used by frontend to test backend connectivity before initiating voice sessions.
  */
 @RestController
-@RequestMapping("/api")
 public class HealthController {
 
-    @GetMapping("/health")
+    @GetMapping({"/api/health", "/health"})
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
