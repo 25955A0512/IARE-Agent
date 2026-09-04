@@ -14,7 +14,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 import httpx
-from telethon import TelegramClient, events
+
+try:
+    from telethon import TelegramClient, events
+    HAS_TELETHON = True
+except ImportError:
+    TelegramClient = None  # type: ignore
+    events = None  # type: ignore
+    HAS_TELETHON = False
 
 from config import settings
 from agents.event_intelligence_agent import EventIntelligenceAgent
@@ -75,6 +82,10 @@ class UserTelegramListener:
 
     async def start_if_configured(self) -> None:
         """Starts the Telethon client background listener if API ID and Hash are set."""
+        if not HAS_TELETHON or TelegramClient is None:
+            log.info("UserTelegramListener: Telethon is not installed — skipping user listener")
+            return
+
         if not self.api_id or not self.api_hash:
             log.info("UserTelegramListener: TELEGRAM_API_ID / TELEGRAM_API_HASH not set — skipping user client")
             return

@@ -95,11 +95,18 @@ class TelegramListener:
         Main message entrypoint for Telegram webhook/polling/simulation.
         Enforces whitelist, discards DMs, extracts event schema, and forward to backend-core.
         """
-        # Rule 1 & 2: Process consented groups, or student forwarded circulars / direct submissions
-        is_consented = self.is_group_consented(group_id)
-        is_dm_submission = (chat_type == "private")
+        # Rule 1 (Privacy): Hard ignore 1-on-1 private DMs per AGENTS.md
+        if chat_type == "private":
+            log.warning("Telegram message REJECTED: Private/DM messages are never processed per AGENTS.md privacy rules")
+            return {
+                "processed": False,
+                "is_event": False,
+                "reason": "private_dm_ignored",
+                "group_id": group_id,
+            }
 
-        if not is_consented and not is_dm_submission:
+        # Rule 2 (Consent Whitelist): Strictly process only consented group IDs
+        if not self.is_group_consented(group_id):
             log.warning("Telegram message REJECTED: Group ID %d is NOT in consented_groups.json whitelist", group_id)
             return {
                 "processed": False,
@@ -112,12 +119,11 @@ class TelegramListener:
                  chat_type, group_id, message_id, bool(image_bytes))
 
         # Process with Event Intelligence Agent
-        effective_group_id = group_id if is_consented else -1002243755834
         extracted = self.event_agent.process_message(
             text=text,
             image_bytes=image_bytes,
             mime_type=mime_type,
-            group_id=effective_group_id,
+            group_id=group_id,
             message_id=message_id,
         )
 
