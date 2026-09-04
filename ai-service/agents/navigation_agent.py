@@ -1,20 +1,21 @@
 """
-navigation_agent.py — Dijkstra-based campus navigation with Gemini NLU.
+navigation_agent.py — Dijkstra-based campus navigation with Groq (Primary) and Gemini (Fallback) NLU.
 
 Loads campus_overview.json at startup. Uses NetworkX for shortest-path.
-Uses google-genai SDK for:
+Uses Groq (Primary) / Gemini (Fallback) LLM for:
   1. NL→node extraction (understanding "Admin office" → "Admin Block")
   2. Composing the final human-friendly answer
 
-Falls back to rapidfuzz keyword matching if GEMINI_API_KEY is not set.
+Falls back to rapidfuzz keyword matching and structured template if API keys are not set.
 """
 
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import networkx as nx
 from rapidfuzz import process as rf_process, fuzz
@@ -63,7 +64,15 @@ class NavigationAgent:
     def __init__(self) -> None:
         data_path = Path(settings.campus_data_path)
         if not data_path.exists():
-            raise FileNotFoundError(f"Campus data not found: {data_path}")
+            candidate = Path(__file__).parent.parent / data_path
+            if candidate.exists():
+                data_path = candidate
+            else:
+                candidate2 = Path(__file__).parent.parent / "data" / "campus_overview.json"
+                if candidate2.exists():
+                    data_path = candidate2
+                else:
+                    raise FileNotFoundError(f"Campus data not found: {data_path}")
 
         with data_path.open(encoding="utf-8") as f:
             raw = json.load(f)
@@ -94,8 +103,49 @@ class NavigationAgent:
                 step_hint=e.get("step_hint", "")
             )
 
+        self.groq_client = None
+        self.gemini_client = None
+
         log.info("NavigationAgent loaded: %d nodes, %d edges",
                  len(self.nodes), self.graph.number_of_edges())
+
+    def _get_groq_client(self):
+        """Dynamically retrieves or initializes the Groq client from environment."""
+        if self.groq_client:
+            return self.groq_client
+        key = (
+            os.environ.get("GROQ_API_KEY")
+            or os.environ.get("GROQ_APT_KEY")
+            or os.environ.get("GROQ_KEY")
+            or settings.groq_api_key
+        )
+        if key and not key.startswith("gsk_YOUR") and key != "your-groq-api-key-here" and len(key.strip()) > 8:
+            try:
+                from groq import Groq
+                self.groq_client = Groq(api_key=key.strip())
+                return self.groq_client
+            except Exception as e:
+                log.warning("NavigationAgent: Groq client init failed: %s", e)
+        return None
+
+    def _get_gemini_client(self):
+        """Dynamically retrieves or initializes the Google Gemini client from environment."""
+        if self.gemini_client:
+            return self.gemini_client
+        key = (
+            os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_KEY")
+            or settings.gemini_api_key
+        )
+        if key and not key.startswith("YOUR_") and key != "your-gemini-api-key-here" and len(key.strip()) > 8:
+            try:
+                from google import genai
+                self.gemini_client = genai.Client(api_key=key.strip())
+                return self.gemini_client
+            except Exception as e:
+                log.warning("NavigationAgent: google-genai client init failed: %s", e)
+        return None
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -126,21 +176,60 @@ class NavigationAgent:
     def _extract_locations(self, query: str) -> tuple[Optional[str], Optional[str]]:
         """
         Extract source and destination from a natural language query.
-        Tries Gemini first; falls back to keyword matching.
+        Tries Groq first (Primary), then Gemini (Fallback), then keyword matching.
         """
-        if settings.gemini_api_key:
+        groq_c = self._get_groq_client()
+        if groq_c:
             try:
-                return self._gemini_extract_locations(query)
+                res = self._groq_extract_locations(query, groq_c)
+                if res[0] is not None or res[1] is not None:
+                    return res
+            except Exception as e:
+                log.warning("Groq location extraction failed (%s) — trying Gemini fallback", e)
+
+        gemini_c = self._get_gemini_client()
+        if gemini_c:
+            try:
+                res = self._gemini_extract_locations(query, gemini_c)
+                if res[0] is not None or res[1] is not None:
+                    return res
             except Exception as e:
                 log.warning("Gemini extraction failed (%s) — using keyword fallback", e)
 
         return self._keyword_extract_locations(query)
 
-    def _gemini_extract_locations(self, query: str) -> tuple[Optional[str], Optional[str]]:
-        """Use Gemini to extract source/destination campus node names."""
-        from google import genai
+    def _groq_extract_locations(self, query: str, client: Any) -> tuple[Optional[str], Optional[str]]:
+        """Use Groq to extract source/destination campus node names."""
+        node_list = ", ".join(self.node_names)
+        prompt = (
+            f"You are a campus navigation assistant for IARE college.\n"
+            f"Extract the SOURCE and DESTINATION campus locations from this query.\n\n"
+            f"Known campus locations: {node_list}\n\n"
+            f"Query: \"{query}\"\n\n"
+            f"Rules:\n"
+            f"- If only one location is mentioned, it is the DESTINATION. Source is null.\n"
+            f"- Match aliases (e.g. \"admin office\" = \"Admin Block\", \"library\" = \"Library\").\n"
+            f"- Return ONLY valid JSON: {{\"source\": \"exact node name or null\", \"destination\": \"exact node name or null\"}}\n"
+        )
+        completion = client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {"role": "system", "content": "You are a JSON location extractor. Respond only with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.0,
+            max_tokens=150,
+            response_format={"type": "json_object"} if hasattr(client, "chat") else None
+        )
+        text = completion.choices[0].message.content.strip()
+        match = re.search(r'\{.*?\}', text, re.DOTALL)
+        if match:
+            data = json.loads(match.group())
+            return data.get("source"), data.get("destination")
+        return None, None
 
-        client = genai.Client(api_key=settings.gemini_api_key)
+    def _gemini_extract_locations(self, query: str, client: Any) -> tuple[Optional[str], Optional[str]]:
+        """Use Gemini to extract source/destination campus node names."""
         node_list = ", ".join(self.node_names)
 
         prompt = f"""You are a campus navigation assistant for IARE college.
@@ -163,7 +252,6 @@ Rules:
             config={"response_mime_type": "application/json"}
         )
         text = response.text.strip()
-        # Parse JSON from response
         match = re.search(r'\{.*?\}', text, re.DOTALL)
         if match:
             data = json.loads(match.group())
@@ -184,7 +272,6 @@ Rules:
         )
         if from_to:
             src_raw, dst_raw = from_to.group(1).strip(), from_to.group(2).strip()
-            # Remove trailing filler words
             for filler in ["please", "now", "quickly"]:
                 dst_raw = dst_raw.replace(filler, "").strip()
             return src_raw, dst_raw
@@ -252,8 +339,7 @@ Rules:
             hint = edge_data.get("step_hint", f"Walk from {path[i]} to {path[i+1]}")
             hints.append(hint)
 
-        # Build human-friendly message (with Gemini or template)
-        route_str = " → ".join(path)
+        # Build human-friendly message (with Groq/Gemini or template)
         message = self._compose_message(source, dest, path, hints, distance, defaulted)
 
         return NavResult(
@@ -271,10 +357,18 @@ Rules:
         path: list[str], hints: list[str],
         distance: float, defaulted: bool
     ) -> str:
-        """Compose a friendly natural-language route description."""
-        if settings.gemini_api_key:
+        """Compose a friendly natural-language route description using Groq (Primary), Gemini (Fallback), or Template."""
+        groq_c = self._get_groq_client()
+        if groq_c:
             try:
-                return self._gemini_compose_message(source, dest, path, hints, distance, defaulted)
+                return self._groq_compose_message(source, dest, path, hints, distance, defaulted, groq_c)
+            except Exception as e:
+                log.warning("Groq message composition failed: %s — trying Gemini fallback", e)
+
+        gemini_c = self._get_gemini_client()
+        if gemini_c:
+            try:
+                return self._gemini_compose_message(source, dest, path, hints, distance, defaulted, gemini_c)
             except Exception as e:
                 log.warning("Gemini message composition failed: %s — using template", e)
 
@@ -290,15 +384,51 @@ Rules:
             f"📍 *Path summary: {' → '.join(path)}*"
         )
 
+    def _groq_compose_message(
+        self, source: str, dest: str,
+        path: list[str], hints: list[str],
+        distance: float, defaulted: bool,
+        client: Any
+    ) -> str:
+        """Use Groq to write a polished, conversational route description."""
+        route_desc = " → ".join(path)
+        steps = "\n".join(f"{i+1}. {h}" for i, h in enumerate(hints))
+        defaulted_note = f"(The user didn't specify a starting point; we defaulted to {source}.)" if defaulted else ""
+
+        prompt = f"""You are a friendly campus guide at IARE college.
+Write a clear, natural navigation answer for a student.
+
+Route: {route_desc}
+Distance: approximately {int(distance)} metres
+Turn-by-turn steps:
+{steps}
+{defaulted_note}
+
+Instructions:
+- Be warm and conversational, not robotic.
+- Mention key landmarks along the way.
+- Keep it concise (under 100 words).
+- If the source was defaulted, gently mention you're starting them from {source}.
+- Do NOT say "I" or "we" — use "you" and "your".
+"""
+        completion = client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {"role": "system", "content": "You are a concise, helpful campus navigation guide."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=250,
+        )
+        return completion.choices[0].message.content.strip()
+
     def _gemini_compose_message(
         self, source: str, dest: str,
         path: list[str], hints: list[str],
-        distance: float, defaulted: bool
+        distance: float, defaulted: bool,
+        client: Any
     ) -> str:
         """Use Gemini to write a polished, conversational route description."""
-        from google import genai
-        client = genai.Client(api_key=settings.gemini_api_key)
-
         route_desc = " → ".join(path)
         steps = "\n".join(f"{i+1}. {h}" for i, h in enumerate(hints))
         defaulted_note = f"(The user didn't specify a starting point; we defaulted to {source}.)" if defaulted else ""

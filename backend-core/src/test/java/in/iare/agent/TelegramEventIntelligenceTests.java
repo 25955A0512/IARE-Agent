@@ -177,7 +177,7 @@ class TelegramEventIntelligenceTests {
                 .targetSemester(5)
                 .targetBranch("CSE")
                 .mandatory(true)
-                .registrationDeadline(deadline72h)
+                .registrationDeadline(deadline72h.toString())
                 .build();
 
         eventService.ingestEvent(req);

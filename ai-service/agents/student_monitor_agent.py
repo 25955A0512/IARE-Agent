@@ -84,31 +84,46 @@ class StudentMonitorAgent:
                 ),
             }
 
-        # 2. Course Faculty / Teacher inquiries
+        # 2. Mentor & Counselor inquiries
+        if any(w in q for w in ["mentor", "counselor", "advisor", "who is my mentor", "my mentor"]):
+            mentor_name = (student_context or {}).get("mentorName", "Dr. K. Srinivas Rao")
+            mentor_cabin = (student_context or {}).get("mentorCabin", "Academic Block B - Room 204")
+            return {
+                "success": True,
+                "agent": "student_monitor",
+                "message": (
+                    f"👤 **Faculty Mentor Details for {name}:**\n\n"
+                    f"• **Mentor Name:** **{mentor_name}**\n"
+                    f"• **Location / Cabin:** 📍 *{mentor_cabin}*\n\n"
+                    f"You can reach out to {mentor_name} for academic counseling, attendance review, or career mentorship."
+                ),
+            }
+
+        # 3. Course Faculty / Teacher inquiries
         if any(w in q for w in ["faculty for", "teacher for", "who teaches", "who is the faculty", "who is teaching", "faculty of", "teacher of", "professor for", "instructor for"]):
             return self._handle_faculty_query(name, q, today_schedule, weekly_schedule, attendance_list)
 
-        # 3. Lab Submissions & Deadlines
+        # 4. Lab Submissions & Deadlines
         if any(w in q for w in ["lab", "submission", "experiment", "due date", "deadline", "assignment"]):
             return self._handle_lab_submissions_query(name, lab_list)
 
-        # 4. Events & Circulars
+        # 5. Events & Circulars
         if any(w in q for w in ["event", "notice", "circular", "placement", "recruitment", "drive", "notification", "announcement"]):
             return self._handle_notices_query(name, notices_list)
 
-        # 5. Timetable & Schedule (handles 'time table', 'timetable', 'schedule', 'today's class', etc.)
+        # 6. Timetable & Schedule (handles 'time table', 'timetable', 'schedule', 'today's class', etc.)
         if any(w in q for w in ["next class", "current class", "timetable", "time table", "schedule", "today's class", "today class", "classes today", "where is my class", "which class", "period", "periods"]):
             return self._handle_timetable_query(name, today_schedule, weekly_schedule)
 
-        # 6. Marks & Evaluation
+        # 7. Marks & Evaluation
         if any(w in q for w in ["mark", "cie", "internal", "score", "grade"]):
             return self._handle_marks_query(name, roll_no, marks_list)
 
-        # 7. Bunk & Leave calculations
+        # 8. Bunk & Leave calculations
         if any(w in q for w in ["bunk", "miss", "leave", "skip", "recover", "reach 75"]):
             return self._handle_bunk_query(name, overall_att, safe_bunks, needed_75)
 
-        # 8. Default Attendance Report
+        # 9. Default Attendance Report
         return self._handle_attendance_query(name, roll_no, overall_att, status, safe_bunks, needed_75, attendance_list)
 
     def _handle_lab_submissions_query(self, name: str, lab_list: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -239,7 +254,7 @@ class StudentMonitorAgent:
     ) -> Dict[str, Any]:
         """Summarizes today's class schedule, current/next class, or weekly schedule."""
         if today_schedule:
-            lines = [f"Here is your daily schedule for today, **{name}**: 📅\n"]
+            lines = [f"📅 **Today's Schedule for {name}:**\n"]
             for slot in today_schedule:
                 start = slot.get("timeSlotStart", "")
                 end = slot.get("timeSlotEnd", "")

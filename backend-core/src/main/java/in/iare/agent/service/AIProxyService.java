@@ -380,4 +380,54 @@ public class AIProxyService {
             return Map.of("success", false, "error", "Couldn't connect to Samvidha right now — you can try again later or skip this step");
         }
     }
+
+    /**
+     * Proxy audio transcription to internal ai-service faster-whisper.
+     */
+    public Map<String, Object> transcribeVoice(byte[] audioBytes, String filename) {
+        WebClient client = createWebClient(getNormalizedAiServiceUrl());
+        org.springframework.http.client.MultipartBodyBuilder builder = new org.springframework.http.client.MultipartBodyBuilder();
+        builder.part("audio", new org.springframework.core.io.ByteArrayResource(audioBytes) {
+            @Override
+            public String getFilename() {
+                return filename != null ? filename : "recording.webm";
+            }
+        });
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = client.post()
+                    .uri("/internal/voice/transcribe")
+                    .header("X-Internal-Secret", sharedSecret)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(org.springframework.web.reactive.function.BodyInserters.fromMultipartData(builder.build()))
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block(java.time.Duration.ofSeconds(30));
+            return response != null ? response : Map.of("transcript", "");
+        } catch (Exception e) {
+            log.error("Voice transcription failed: {}", e.getMessage());
+            return Map.of("transcript", "", "error", e.getMessage());
+        }
+    }
+
+    /**
+     * Proxy text-to-speech synthesis to internal ai-service edge-tts.
+     */
+    public byte[] synthesizeVoice(String text) {
+        WebClient client = createWebClient(getNormalizedAiServiceUrl());
+        try {
+            return client.post()
+                    .uri("/internal/voice/synthesize")
+                    .header("X-Internal-Secret", sharedSecret)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("text", text))
+                    .retrieve()
+                    .bodyToMono(byte[].class)
+                    .block(java.time.Duration.ofSeconds(30));
+        } catch (Exception e) {
+            log.error("Voice synthesis failed: {}", e.getMessage());
+            return new byte[0];
+        }
+    }
 }

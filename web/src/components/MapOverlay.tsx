@@ -18,16 +18,20 @@ interface Edge {
 }
 
 interface MapOverlayProps {
-  activeRoute: NavResult | null
+  activeRoute?: NavResult | null
+  navResult?: NavResult | null
+  onClose?: () => void
 }
 
 /**
  * MapOverlay — Apple Maps-inspired campus vector plot with dynamic path animation
  */
-export default function MapOverlay({ activeRoute }: MapOverlayProps) {
+export default function MapOverlay({ activeRoute, navResult, onClose }: MapOverlayProps) {
   const [nodes, setNodes] = React.useState<Node[]>([])
   const [edges, setEdges] = React.useState<Edge[]>([])
   const svgRef = useRef<SVGSVGElement>(null)
+
+  const effectiveRoute = activeRoute || navResult || null
 
   useEffect(() => {
     fetch('/campus_overview.json')
@@ -39,7 +43,7 @@ export default function MapOverlay({ activeRoute }: MapOverlayProps) {
       .catch(() => {})
   }, [])
 
-  const routeStops = activeRoute?.route_stops ?? []
+  const routeStops = effectiveRoute?.route_stops ?? []
   const routeNodeNames = new Set(routeStops)
   const nodeMap = new Map<number, Node>(nodes.map((n) => [n.id, n]))
   const routeNodes = routeStops
@@ -159,10 +163,10 @@ export default function MapOverlay({ activeRoute }: MapOverlayProps) {
         })}
       </svg>
 
-      {activeRoute?.success && routeStops.length > 0 && (
+      {effectiveRoute?.success && routeStops.length > 0 && (
         <div style={styles.legend}>
           <Badge variant="primary" size="sm" icon={<Navigation size={10} />}>
-            {routeStops.length} stops • {Math.round(activeRoute.total_distance_meters || 0)}m
+            {routeStops.length} stops • {Math.round(effectiveRoute.total_distance_meters || 0)}m
           </Badge>
         </div>
       )}

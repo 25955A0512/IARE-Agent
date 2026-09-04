@@ -55,6 +55,24 @@
       "default_semester": null,
       "consent_contact": "admin@iare.ac.in",
       "consented_at": "2026-08-26T21:35:00Z"
+    },
+    {
+      "group_id": -1002243755834,
+      "group_name": "IARE College Student & Circulars Official Group",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "student_lead@iare.ac.in",
+      "consented_at": "2026-09-04T11:45:00Z"
+    },
+    {
+      "group_id": 2243755834,
+      "group_name": "IARE College Student & Circulars Official Group (Direct)",
+      "department": "ALL",
+      "batch": 0,
+      "default_semester": null,
+      "consent_contact": "student_lead@iare.ac.in",
+      "consented_at": "2026-09-04T11:45:00Z"
     }
   ]
 }

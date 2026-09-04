@@ -23,7 +23,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await register(fullName, email, password)
-      navigate('/chat')
+      navigate('/dashboard')
     } catch (err: any) {
       const msg =
         err.response?.data?.error ||

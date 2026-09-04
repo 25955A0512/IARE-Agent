@@ -22,6 +22,7 @@ from agents.student_monitor_agent import StudentMonitorAgent
 from agents.general_assistant_agent import GeneralAssistantAgent
 from agents.event_intelligence_agent import EventIntelligenceAgent
 from agents.iare_rag_agent import IARERagAgent
+from user_telegram_listener import UserTelegramListener
 from scrapers.samvidha_scraper import SamvidhaScraper
 from telegram_listener import TelegramListener
 from voice.transcribe import transcribe_audio
@@ -42,13 +43,14 @@ _general_agent: GeneralAssistantAgent | None = None
 _iare_rag_agent: IARERagAgent | None = None
 _event_agent: EventIntelligenceAgent | None = None
 _telegram_listener: TelegramListener | None = None
+_user_telegram_listener: UserTelegramListener | None = None
 _samvidha_scraper: SamvidhaScraper | None = None
 _router = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _nav_agent, _student_agent, _general_agent, _iare_rag_agent, _event_agent, _telegram_listener, _samvidha_scraper, _router
+    global _nav_agent, _student_agent, _general_agent, _iare_rag_agent, _event_agent, _telegram_listener, _user_telegram_listener, _samvidha_scraper, _router
     log.info("=== ai-service starting up ===")
     _nav_agent = NavigationAgent()
     _student_agent = StudentMonitorAgent()
@@ -56,6 +58,7 @@ async def lifespan(app: FastAPI):
     _iare_rag_agent = IARERagAgent()
     _event_agent = EventIntelligenceAgent()
     _telegram_listener = TelegramListener(event_agent=_event_agent)
+    _user_telegram_listener = UserTelegramListener(event_agent=_event_agent)
     _samvidha_scraper = SamvidhaScraper()
     _router = build_router(_nav_agent, _student_agent, _general_agent, _iare_rag_agent)
     log.info(f"Navigation agent ready — {len(_nav_agent.nodes)} nodes, "
@@ -67,11 +70,14 @@ async def lifespan(app: FastAPI):
     log.info("Samvidha in-memory scraper ready")
     # Start Telegram background polling if configured
     await _telegram_listener.start_polling_if_configured()
+    await _user_telegram_listener.start_if_configured()
     log.info("=== ai-service ready ===")
     yield
     log.info("=== ai-service shutting down ===")
     if _telegram_listener:
         await _telegram_listener.stop()
+    if _user_telegram_listener:
+        await _user_telegram_listener.stop()
 
 
 app = FastAPI(
@@ -387,7 +393,7 @@ async def gemini_live_token(request: Request, _=Depends(require_internal_secret)
         # Request an ephemeral token for Gemini Live
         # Token is short-lived (typically ~1 min) — client uses it, not the raw key
         token_response = client.models.generate_content(
-            model="gemini-2.0-flash-exp",
+            model=settings.gemini_model or "gemini-2.5-flash",
             contents="Generate an ephemeral session token for Gemini Live."
         )
         # In production, use the actual Live API token endpoint when GA

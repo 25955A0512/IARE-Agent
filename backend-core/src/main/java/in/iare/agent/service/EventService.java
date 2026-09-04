@@ -61,7 +61,7 @@ public class EventService {
                     .targetSection(req.getTargetSection())
                     .targetAudienceRaw(req.getTargetAudienceRaw() != null ? req.getTargetAudienceRaw() : "All Students")
                     .mandatory(req.isMandatory())
-                    .registrationDeadline(req.getRegistrationDeadline())
+                    .registrationDeadline(parseDeadline(req.getRegistrationDeadline()))
                     .actionUrl(req.getActionUrl())
                     .build();
         } else {
@@ -71,6 +71,9 @@ public class EventService {
             event.setLocation(req.getLocation() != null ? req.getLocation() : event.getLocation());
             event.setMandatory(req.isMandatory());
             event.setActionUrl(req.getActionUrl() != null ? req.getActionUrl() : event.getActionUrl());
+            if (req.getRegistrationDeadline() != null) {
+                event.setRegistrationDeadline(parseDeadline(req.getRegistrationDeadline()));
+            }
         }
 
         Event saved = eventRepository.save(event);
@@ -81,6 +84,13 @@ public class EventService {
         }
 
         return toDto(saved);
+    }
+
+    @Transactional
+    public void clearAllEvents() {
+        notificationRepository.deleteAll();
+        eventRepository.deleteAll();
+        log.info("Cleared all events and student notifications from database.");
     }
 
     /**
@@ -306,5 +316,24 @@ public class EventService {
                 .sentAt(n.getSentAt())
                 .createdAt(n.getCreatedAt())
                 .build();
+    }
+
+    private Instant parseDeadline(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Instant.parse(raw);
+        } catch (Exception ignored) {}
+        try {
+            return java.time.LocalDate.parse(raw).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        } catch (Exception ignored) {}
+        try {
+            java.time.format.DateTimeFormatter fmt = new java.time.format.DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("[MMM d, yyyy][MMMM d, yyyy][d MMM yyyy][yyyy-MM-dd]")
+                    .toFormatter(java.util.Locale.ENGLISH);
+            java.time.temporal.TemporalAccessor accessor = fmt.parse(raw.trim());
+            return java.time.LocalDate.from(accessor).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        } catch (Exception ignored) {}
+        return null;
     }
 }

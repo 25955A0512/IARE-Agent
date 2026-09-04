@@ -35,4 +35,22 @@ public class AgentProxyController {
                 req.getMessage(), req.getMode(), req.getSessionId(), caller);
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/voice/transcribe")
+    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> transcribeVoice(
+            @RequestParam("audio") org.springframework.web.multipart.MultipartFile file) throws Exception {
+        Map<String, Object> result = aiProxyService.transcribeVoice(file.getBytes(), file.getOriginalFilename());
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping(value = "/voice/synthesize", produces = "audio/mpeg")
+    @PreAuthorize("hasAnyRole('STUDENT', 'FACULTY', 'ADMIN')")
+    public ResponseEntity<byte[]> synthesizeVoice(@RequestBody Map<String, String> payload) {
+        String text = payload.getOrDefault("text", "");
+        byte[] audioData = aiProxyService.synthesizeVoice(text);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "audio/mpeg")
+                .body(audioData);
+    }
 }

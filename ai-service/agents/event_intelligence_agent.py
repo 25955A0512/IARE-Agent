@@ -80,7 +80,28 @@ class EventIntelligenceAgent:
             log.info("Telegram message classified as casual noise (ignored): %r", raw_text[:50])
             return None
 
-        # 1. Try LLM multimodal extraction if client available
+        # 1. Try Groq (Primary for text) if no image
+        if not image_bytes:
+            try:
+                extracted = self._extract_with_groq(raw_text)
+                if extracted and extracted.get("is_event"):
+                    extracted["source_telegram_group_id"] = group_id
+                    extracted["source_telegram_message_id"] = message_id
+                    extracted["has_image"] = False
+                    if not extracted.get("raw_text"):
+                        extracted["raw_text"] = raw_text
+                    if extracted.get("target_branch"):
+                        m_b = re.search(r"\b(CSE|ECE|IT|ME|CE|AE|EEE|CSIT|AIML|DS|CIVIL|MECH|AERO)\b", str(extracted["target_branch"]).upper())
+                        if m_b:
+                            extracted["target_branch"] = m_b.group(1)
+                    return extracted
+                elif extracted and not extracted.get("is_event"):
+                    log.info("Groq classified message as non-event: %r", raw_text[:60])
+                    return None
+            except Exception as e:
+                log.warning("Groq event extraction failed: %s — trying Gemini / regex fallback", e)
+
+        # 2. Try Gemini for multimodal vision poster OCR or fallback
         if self.client:
             try:
                 extracted = self._extract_with_gemini(raw_text, image_bytes, mime_type)
@@ -90,6 +111,10 @@ class EventIntelligenceAgent:
                     extracted["has_image"] = bool(image_bytes)
                     if not extracted.get("raw_text"):
                         extracted["raw_text"] = raw_text or "[Poster Image]"
+                    if extracted.get("target_branch"):
+                        m_b = re.search(r"\b(CSE|ECE|IT|ME|CE|AE|EEE|CSIT|AIML|DS|CIVIL|MECH|AERO)\b", str(extracted["target_branch"]).upper())
+                        if m_b:
+                            extracted["target_branch"] = m_b.group(1)
                     return extracted
                 elif extracted and not extracted.get("is_event"):
                     log.info("Gemini classified message as non-event: %r", raw_text[:60])
@@ -97,8 +122,69 @@ class EventIntelligenceAgent:
             except Exception as e:
                 log.warning("Gemini event extraction failed: %s — falling back to regex parser", e)
 
-        # 2. Fallback deterministic extraction
+        # 3. Fallback deterministic extraction
         return self._extract_fallback(raw_text, bool(image_bytes), group_id, message_id)
+
+    def _extract_with_groq(self, text: str) -> Optional[Dict[str, Any]]:
+        """Invokes Groq with structured JSON output schema and model fallbacks."""
+        groq_key = settings.groq_api_key or os.environ.get("GROQ_API_KEY")
+        if not groq_key or groq_key.startswith("gsk_YOUR") or len(groq_key.strip()) < 8:
+            return None
+        from groq import Groq
+        client = Groq(api_key=groq_key.strip())
+        system_instruction = """
+You are an expert Campus Event & Circular Intelligence Extractor for the Institute of Aeronautical Engineering (IARE).
+Analyze the input text and extract structured event/notice information.
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "is_event": boolean,
+  "title": string,
+  "description": string,
+  "event_date": string or null,
+  "event_time": string or null,
+  "location": string or null,
+  "organizer": string or null,
+  "target_semester": integer or null,
+  "target_branch": string or null,
+  "target_section": string or null,
+  "target_audience_raw": string or null,
+  "is_mandatory": boolean,
+  "registration_deadline": string or null,
+  "action_url": string or null
+}
+RULES:
+1. "is_event": Return false if this is casual chat or non-event. Return true for official circulars, placement drives, exams, workshops, hackathons.
+2. "is_mandatory": ONLY TRUE for compulsory registration, mandatory drives, or required exams.
+3. "target_semester": Integer semester (1 to 8) e.g. "V Sem" -> 5, "3rd year" -> 5 or 6, "1st year" -> 1 or 2.
+4. "action_url": Any registration URL, Google Form, or website link in the text.
+"""
+        models_to_try = [
+            settings.groq_model,
+            "openai/gpt-oss-120b",
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-20b",
+        ]
+        for mdl in dict.fromkeys([m for m in models_to_try if m]):
+            try:
+                completion = client.chat.completions.create(
+                    model=mdl,
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": text}
+                    ],
+                    temperature=0.1,
+                    max_tokens=800,
+                    response_format={"type": "json_object"}
+                )
+                resp_text = completion.choices[0].message.content.strip()
+                if resp_text.startswith("```"):
+                    resp_text = re.sub(r"^```(?:json)?\n|\n```$", "", resp_text, flags=re.MULTILINE).strip()
+                data = json.loads(resp_text)
+                return data
+            except Exception as e:
+                log.warning("Groq event extraction model %s error: %s", mdl, e)
+        return None
 
     def _extract_with_gemini(
         self,
@@ -106,7 +192,7 @@ class EventIntelligenceAgent:
         image_bytes: Optional[bytes],
         mime_type: str
     ) -> Optional[Dict[str, Any]]:
-        """Invokes Gemini 2.0 Flash with structured JSON output schema."""
+        """Invokes Gemini Multimodal Vision / OCR with structured JSON output schema."""
         from google.genai import types
 
         system_instruction = """
@@ -151,26 +237,39 @@ Respond ONLY with a valid JSON object matching this schema:
                 )
             )
 
-        prompt_text = text if text else "Extract event details from this poster."
+        prompt_text = text if text else "Extract event details, dates, URLs, deadlines, and target branch/semester from this poster image."
         contents.append(prompt_text)
 
-        response = self.client.models.generate_content(
-            model=settings.gemini_model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.1,
-                response_mime_type="application/json",
-            )
-        )
+        models_to_try = [
+            settings.gemini_model,
+            "gemini-2.5-flash",
+            "gemini-flash-latest",
+            "gemini-2.5-pro",
+        ]
+        for mdl in dict.fromkeys([m for m in models_to_try if m]):
+            try:
+                response = self.client.models.generate_content(
+                    model=mdl,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                    )
+                )
+                resp_text = (response.text or "").strip()
+                if resp_text.startswith("```"):
+                    resp_text = re.sub(r"^```(?:json)?\n|\n```$", "", resp_text, flags=re.MULTILINE).strip()
 
-        resp_text = (response.text or "").strip()
-        # Clean JSON markdown if wrapped
-        if resp_text.startswith("```"):
-            resp_text = re.sub(r"^```(?:json)?\n|\n```$", "", resp_text, flags=re.MULTILINE).strip()
-
-        data = json.loads(resp_text)
-        return data
+                data = json.loads(resp_text)
+                if data.get("target_branch"):
+                    m_b = re.search(r"\b(CSE|ECE|IT|ME|CE|AE|EEE|CSIT|AIML|DS|CIVIL|MECH|AERO)\b", str(data["target_branch"]).upper())
+                    if m_b:
+                        data["target_branch"] = m_b.group(1)
+                return data
+            except Exception as e:
+                log.warning("Gemini event extraction model %s error: %s", mdl, e)
+        return None
 
     def _is_obvious_casual_noise(self, text: str) -> bool:
         """Quick check for obvious casual group noise."""

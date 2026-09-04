@@ -13,6 +13,9 @@ scratch/
 *.db
 *.sqlite
 *.sqlite3
+*.session
+*.session-journal
+iare_user_session*
 
 # ── Python ────────────────────────────────────────────────────
 __pycache__/

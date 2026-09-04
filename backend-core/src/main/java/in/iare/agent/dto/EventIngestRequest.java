@@ -62,7 +62,7 @@ public class EventIngestRequest {
     private boolean mandatory = false;
 
     @JsonProperty("registration_deadline")
-    private Instant registrationDeadline;
+    private String registrationDeadline;
 
     @JsonProperty("action_url")
     private String actionUrl;

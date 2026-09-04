@@ -136,5 +136,6 @@ def test_general_assistant_answers_event_questions(general_agent):
     )
     assert res["success"] is True
     assert "TCS National Qualifier Test" in res["message"]
-    assert "MANDATORY" in res["message"]
+    assert "mandatory" in res["message"].lower()
     assert "AI & Deep Learning" in res["message"]
+

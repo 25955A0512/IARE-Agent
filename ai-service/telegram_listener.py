@@ -95,17 +95,11 @@ class TelegramListener:
         Main message entrypoint for Telegram webhook/polling/simulation.
         Enforces whitelist, discards DMs, extracts event schema, and forward to backend-core.
         """
-        # Rule 1: No Private / DM processing
-        if chat_type == "private":
-            log.info("Telegram message ignored: Private / 1-on-1 DM")
-            return {
-                "processed": False,
-                "is_event": False,
-                "reason": "private_dm_ignored",
-            }
+        # Rule 1 & 2: Process consented groups, or student forwarded circulars / direct submissions
+        is_consented = self.is_group_consented(group_id)
+        is_dm_submission = (chat_type == "private")
 
-        # Rule 2: Hard Whitelist check
-        if not self.is_group_consented(group_id):
+        if not is_consented and not is_dm_submission:
             log.warning("Telegram message REJECTED: Group ID %d is NOT in consented_groups.json whitelist", group_id)
             return {
                 "processed": False,
@@ -114,20 +108,21 @@ class TelegramListener:
                 "group_id": group_id,
             }
 
-        log.info("Telegram message accepted from consented group %d (msg_id=%d, has_image=%s)",
-                 group_id, message_id, bool(image_bytes))
+        log.info("Telegram message accepted (chat_type=%s, group_id=%d, msg_id=%d, has_image=%s)",
+                 chat_type, group_id, message_id, bool(image_bytes))
 
         # Process with Event Intelligence Agent
+        effective_group_id = group_id if is_consented else -1002243755834
         extracted = self.event_agent.process_message(
             text=text,
             image_bytes=image_bytes,
             mime_type=mime_type,
-            group_id=group_id,
+            group_id=effective_group_id,
             message_id=message_id,
         )
 
         if not extracted or not extracted.get("is_event"):
-            log.info("Message evaluated as non-event / casual chatter in group %d", group_id)
+            log.info("Message evaluated as non-event / casual chatter (group=%d, chat_type=%s)", group_id, chat_type)
             return {
                 "processed": True,
                 "is_event": False,
@@ -140,7 +135,7 @@ class TelegramListener:
             "processed": True,
             "is_event": True,
             "event": extracted,
-            "ingested_to_backend": ingest_status.get("success", False),
+            "ingested_to_backend": ingest_status.get("success", False) or "id" in ingest_status,
             "backend_response": ingest_status,
         }
 
@@ -235,13 +230,44 @@ class TelegramListener:
                                                 photo_bytes = d_resp.content
 
                             # Handle incoming message
-                            await self.handle_incoming_message(
+                            res = await self.handle_incoming_message(
                                 group_id=chat_id,
                                 message_id=msg_id,
                                 text=text,
                                 chat_type=chat_type,
                                 image_bytes=photo_bytes,
                             )
+
+                            # If user messaged the bot directly in DM, send a real-time status reply
+                            if chat_type == "private":
+                                if res.get("is_event"):
+                                    ev = res.get("event", {})
+                                    title = ev.get("title", "Campus Notice")
+                                    date_str = ev.get("event_date") or "Upcoming"
+                                    venue = ev.get("location") or "IARE Campus"
+                                    aud = ev.get("target_audience_raw") or "All Students"
+                                    link = ev.get("action_url")
+                                    link_text = f"\n🔗 Register: {link}" if link else ""
+                                    reply_text = (
+                                        f"✅ Notice Published to IARE Agent:\n\n"
+                                        f"📌 {title}\n"
+                                        f"📅 Date: {date_str}\n"
+                                        f"📍 Venue: {venue}\n"
+                                        f"👥 Target: {aud}{link_text}\n\n"
+                                        f"🌐 Visible live on http://localhost:5173/chat"
+                                    )
+                                else:
+                                    reply_text = (
+                                        "👋 Hi! I am your IARE Campus Intelligence Bot.\n\n"
+                                        "You can forward any official college announcement, placement circular, or poster flyer from your college groups here, and I will automatically extract the details and publish them to the IARE Agent Notices board!"
+                                    )
+                                try:
+                                    await client.post(f"{base_url}/sendMessage", json={
+                                        "chat_id": chat_id,
+                                        "text": reply_text
+                                    })
+                                except Exception as e:
+                                    log.debug("Could not send Telegram reply: %s", e)
                     elif resp.status_code == 409:
                         log.warning("Telegram getUpdates returned 409 Conflict (another instance or webhook active). Backing off 10s...")
                         await asyncio.sleep(10)

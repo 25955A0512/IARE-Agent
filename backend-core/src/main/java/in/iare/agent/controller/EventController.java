@@ -71,4 +71,14 @@ public class EventController {
         EventDto created = eventService.ingestEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
+    @DeleteMapping("/internal/clear-all")
+    public ResponseEntity<Map<String, Object>> clearAllEvents(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secretHeader) {
+        if (secretHeader == null || !secretHeader.equals(sharedSecret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        eventService.clearAllEvents();
+        return ResponseEntity.ok(Map.of("success", true, "message", "Cleared all events"));
+    }
 }
